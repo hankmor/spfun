@@ -47,8 +47,31 @@ exports.main = async (event, context) => {
     }
 
     try {
-        // 2. Security Check (Optional placeholder)
-        // const secResult = await cloud.openapi.security.msgSecCheck({ content: message })
+        // 2. Security Check (Mandatory for WeChat Mini Programs)
+        try {
+            const secResult = await cloud.openapi.security.msgSecCheck({
+                content: message
+            })
+            if (secResult.errCode !== 0) {
+                return {
+                    reply: '含有违规内容，请文明发言。',
+                    limitHit: true,
+                    action: 'stop'
+                }
+            }
+        } catch (secErr) {
+            // Error 87014 means risky content
+            if (secErr.errCode === 87014) {
+                return {
+                    reply: '含有违规内容，请文明发言。',
+                    limitHit: true,
+                    action: 'stop'
+                }
+            }
+            // For other errors (limit exceeded etc), log and proceed (fail open) or block (fail closed)
+            // Here we fail open to avoid blocking users on system error, but log it
+            console.error('Security Check System Error:', secErr)
+        }
 
         // 3. AI Generation
         let systemPrompt = ROLES[roleId].system
