@@ -25,7 +25,7 @@
         <!-- Avatar -->
         <image 
             class="avatar" 
-            :src="msg.role === 'user' ? (userProfile?.avatarUrl || '/static/logo.png') : roleAvatar" 
+            :src="msg.role === 'user' ? (userProfile?.avatarUrl || '/static/default_avatar.png') : roleAvatar" 
             mode="aspectFill"
         ></image>
 

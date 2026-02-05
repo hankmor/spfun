@@ -113,7 +113,8 @@ const selectFrame = (index) => {
 }
 
 const generateAvatar = async () => {
-    if (!userAvatar.value) return uni.showToast({ title: '先点相框上传照片哦', icon: 'none' })
+    // Allow generation with default avatar if user hasn't uploaded one
+    const avatarToUse = userAvatar.value || '/static/default_avatar.png'
     
     uni.showLoading({ title: '施法中...' })
     generated.value = true
@@ -126,7 +127,7 @@ const generateAvatar = async () => {
     context.fillRect(0, 0, size, size)
     
     // 2. Avatar
-    context.drawImage(userAvatar.value, 0, 0, size, size)
+    context.drawImage(avatarToUse, 0, 0, size, size)
     
     // 3. Border (Frame)
     const frame = currentFrame.value
