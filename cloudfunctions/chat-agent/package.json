@@ -1,0 +1,12 @@
+{
+  "name": "chat-agent",
+  "version": "1.0.0",
+  "description": "AI Chat Agent linked to DeepSeek",
+  "main": "index.js",
+  "author": "Antigravity",
+  "license": "ISC",
+  "dependencies": {
+    "wx-server-sdk": "latest",
+    "axios": "^1.6.0"
+  }
+}
