@@ -30,9 +30,6 @@
         ></image>
 
         <view class="msg-body">
-            <!-- Name (Optional for AI) -->
-            <!-- <text v-if="msg.role === 'ai'" class="nickname">{{ roleName }}</text> -->
-
             <!-- Bubble -->
             <view class="bubble-wrapper">
                 <view 
@@ -114,10 +111,10 @@ onLoad((options) => {
   roleAvatar.value = info.avatar
   roleName.value = info.name
   
-  uni.setNavigationBarTitle({ title: info.name }) // Just the name, WeChat style
+  uni.setNavigationBarTitle({ title: info.name }) 
   uni.setNavigationBarColor({
-      frontColor: '#000000',
-      backgroundColor: '#EDEDED'
+      frontColor: '#FFFFFF',
+      backgroundColor: '#D32F2F' // Red Header
   })
 
   checkUserProfile()
@@ -137,7 +134,6 @@ const checkUserProfile = () => {
     if (profile) {
         userProfile.value = profile
     } else {
-         // Minimal profile check
          userProfile.value = { gender: 'unknown' } 
     }
 }
@@ -150,7 +146,7 @@ const sendMessage = async () => {
     if (!inputContent.value.trim() || loading.value) return
     const text = inputContent.value
     messages.value.push({ role: 'user', content: text })
-    inputContent.value = '' // Clear immediately
+    inputContent.value = '' 
     scrollToBottom()
     loading.value = true
     
@@ -179,15 +175,12 @@ const scrollToBottom = () => {
    })
 }
 
-const onScrollToBottom = (e) => {
-    // Optional: Load history
-}
+const onScrollToBottom = (e) => {}
 
 const onCopy = (content) => {
     uni.setClipboardData({ data: content })
 }
 
-// Share Logic
 onShareAppMessage((res) => {
     let shareConfig = {
         title: '春节嘴替大作战',
@@ -212,7 +205,7 @@ onShareAppMessage((res) => {
     display: flex;
     flex-direction: column;
     height: 100vh;
-    background-color: #EDEDED;
+    background-color: #FFF8E1; /* Pale Peach/Cream */
 }
 
 .chat-content {
@@ -230,7 +223,7 @@ onShareAppMessage((res) => {
 }
 .time-tag {
     background: rgba(0,0,0,0.1);
-    color: #FFF;
+    color: #999;
     font-size: 24rpx;
     padding: 4rpx 12rpx;
     border-radius: 8rpx;
@@ -254,9 +247,10 @@ onShareAppMessage((res) => {
 .avatar {
     width: 80rpx;
     height: 80rpx;
-    border-radius: 10rpx; /* Rounded square like WeChat */
-    background: #DDD;
+    border-radius: 10rpx;
+    background: #FFCDD2;
     flex-shrink: 0;
+    border: 2rpx solid #FFF;
 }
 
 /* Message Body */
@@ -278,7 +272,7 @@ onShareAppMessage((res) => {
 .bubble {
     padding: 20rpx 24rpx;
     font-size: 32rpx;
-    color: #000;
+    color: #333;
     line-height: 1.5;
     border-radius: 12rpx;
     position: relative;
@@ -286,14 +280,20 @@ onShareAppMessage((res) => {
     min-height: 40rpx;
     display: flex;
     align-items: center;
+    box-shadow: 0 2rpx 4rpx rgba(0,0,0,0.05);
 }
 
+/* User Bubble: Soft Pink/Red */
 .bubble-user {
-    background-color: #95EC69; /* WeChat Green */
+    background-color: #FFCDD2; /* Light Red/Pink */
+    color: #B71C1C;
 }
 
+/* AI Bubble: White */
 .bubble-ai {
     background-color: #FFFFFF;
+    color: #333;
+    border: 1rpx solid #FFF59D; /* Subtle Gold Border */
 }
 
 /* Arrows */
@@ -308,16 +308,16 @@ onShareAppMessage((res) => {
 .arrow-user {
     right: -12rpx;
     border-width: 12rpx 0 12rpx 12rpx;
-    border-color: transparent transparent transparent #95EC69;
+    border-color: transparent transparent transparent #FFCDD2;
 }
 
 .arrow-ai {
     left: -12rpx;
     border-width: 12rpx 12rpx 12rpx 0;
-    border-color: transparent #FFFFFF transparent transparent;
+    border-color: transparent #FFFFFF transparent transparent; /* Arrow border logic is tricky, simplified */
 }
 
-/* Footer Actions (Share/Score) - Specific to AI */
+/* Footer Actions */
 .bubble-footer {
     display: flex;
     align-items: center;
@@ -327,11 +327,12 @@ onShareAppMessage((res) => {
 
 .score-badge {
     font-size: 20rpx;
-    color: #FA5151;
-    background: rgba(250, 81, 81, 0.1);
+    color: #D32F2F;
+    background: #FFEBEE;
     padding: 2rpx 8rpx;
     border-radius: 6rpx;
     margin-right: 16rpx;
+    border: 1rpx solid #FFCDD2;
 }
 
 .action-btn {
@@ -341,7 +342,7 @@ onShareAppMessage((res) => {
     margin: 0;
     line-height: 1;
     font-size: 22rpx;
-    color: #576B95; /* WeChat Link Blue */
+    color: #FF6F00; /* Amber Text */
     display: flex;
     align-items: center;
 }
@@ -350,20 +351,17 @@ onShareAppMessage((res) => {
 
 /* Input Panel */
 .input-panel {
-    background: #F7F7F7;
+    background: #FFF8E1;
     min-height: 110rpx;
     padding: 0 20rpx;
     padding-bottom: constant(safe-area-inset-bottom);
     padding-bottom: env(safe-area-inset-bottom);
     display: flex;
     flex-direction: column;
+    border-top: 1rpx solid #FFE082;
 }
 
-.panel-top-border {
-    height: 1rpx;
-    background: #DCDCDC;
-    width: 100%;
-}
+.panel-top-border { display: none; }
 
 .toolbar {
     display: flex;
@@ -380,13 +378,14 @@ onShareAppMessage((res) => {
     margin-right: 20rpx;
     padding: 0 20rpx;
     font-size: 32rpx;
-    caret-color: #95EC69;
+    caret-color: #D32F2F;
+    border: 1rpx solid #FFECB3;
 }
 
 .send-btn {
     width: 110rpx;
     height: 76rpx;
-    background: #95EC69; /* Active Green */
+    background: #D32F2F; /* Red Button */
     color: #FFF;
     font-size: 30rpx;
     border-radius: 12rpx;
@@ -398,8 +397,9 @@ onShareAppMessage((res) => {
 }
 
 .btn-disabled {
-    background: #E0E0E0;
-    color: #B2B2B2;
+    background: #FFCDD2;
+    color: #FFF;
+    opacity: 0.8;
 }
 
 /* Utilities */
@@ -411,8 +411,8 @@ onShareAppMessage((res) => {
 .loading-spinner {
     width: 30rpx;
     height: 30rpx;
-    border: 4rpx solid #DDD;
-    border-top-color: #999;
+    border: 4rpx solid #FFCDD2;
+    border-top-color: #D32F2F;
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }

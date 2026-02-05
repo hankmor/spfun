@@ -107,26 +107,26 @@ const drawReceipt = () => {
   ctx.fillRect(0, 0, width, height)
   
   // Border (Double Line)
-  ctx.setStrokeStyle('#333')
-  ctx.setLineWidth(2)
+  ctx.setStrokeStyle('#B71C1C') // Dark Red Border
+  ctx.setLineWidth(3)
   ctx.strokeRect(15, 15, width-30, height-30)
   ctx.setLineWidth(1)
-  ctx.strokeRect(20, 20, width-40, height-40)
+  ctx.strokeRect(22, 22, width-44, height-44)
   
   // Header
   ctx.setFontSize(28)
-  ctx.setFillStyle('#333')
+  ctx.setFillStyle('#B71C1C')
   ctx.setTextAlign('center')
   ctx.font = 'bold 28px serif'
   ctx.fillText('MOM\'S BANK', width/2, 70)
   
   ctx.setFontSize(16)
-  ctx.setFillStyle('#666')
+  ctx.setFillStyle('#D32F2F')
   ctx.fillText('妈妈定期存单', width/2, 100)
   
   // Divider
-  ctx.setStrokeStyle('#CCC')
-  ctx.setLineWidth(1)
+  ctx.setStrokeStyle('#FFC107') // Gold Divider
+  ctx.setLineWidth(2)
   ctx.setLineDash([5, 5])
   ctx.beginPath()
   ctx.moveTo(30, 120)
@@ -218,7 +218,7 @@ const saveImage = () => {
 .container {
   min-height: 100vh;
   padding: 40rpx;
-  background: linear-gradient(180deg, #FF6B6B 0%, #FFD93D 100%);
+  background-color: #FFF8E1; /* Creamy Beige */
   position: relative;
   overflow: hidden;
   box-sizing: border-box;
@@ -228,9 +228,9 @@ const saveImage = () => {
 .bg-coins {
     position: absolute;
     top: 0; left: 0; width: 100%; height: 100%;
-    background-image: radial-gradient(#FFD700 15%, transparent 15%);
+    background-image: radial-gradient(#FFC107 15%, transparent 15%);
     background-size: 60rpx 60rpx;
-    opacity: 0.1;
+    opacity: 0.15;
     pointer-events: none;
 }
 
@@ -266,9 +266,9 @@ const saveImage = () => {
     width: 100%;
     padding: 60rpx 40rpx 80rpx;
     box-sizing: border-box;
-    box-shadow: 0 20rpx 60rpx rgba(0,0,0,0.15);
+    box-shadow: 0 20rpx 60rpx rgba(211, 47, 47, 0.1);
     position: relative;
-    /* Clean top, jagged bottom handled by pseudo or child */
+    border-top: 8rpx solid #B71C1C; /* Red Top Border */
 }
 
 /* Jagged Edge using gradient */
@@ -292,20 +292,21 @@ const saveImage = () => {
     font-family: serif;
     font-size: 48rpx;
     font-weight: 900;
-    color: #333;
+    color: #B71C1C;
     display: block;
     letter-spacing: 4rpx;
 }
 .receipt-sub {
     font-size: 24rpx;
-    color: #999;
+    color: #D32F2F;
     letter-spacing: 10rpx;
     margin-top: 10rpx;
     display: block;
+    opacity: 0.8;
 }
 
 .dotted-line {
-    border-bottom: 4rpx dashed #E0E0E0;
+    border-bottom: 4rpx dashed #FFC107;
     margin: 40rpx 0;
 }
 
@@ -315,7 +316,7 @@ const saveImage = () => {
 }
 .label {
     font-size: 20rpx;
-    color: #999;
+    color: #B71C1C;
     font-weight: bold;
     margin-bottom: 12rpx;
     display: block;
@@ -323,11 +324,11 @@ const saveImage = () => {
 }
 
 .engraved-box {
-    background: #F2F2F2;
+    background: #FFF;
     border-radius: 12rpx;
     padding: 10rpx 24rpx;
-    box-shadow: inset 0 4rpx 8rpx rgba(0,0,0,0.06);
-    border: 2rpx solid #EAEAEA;
+    box-shadow: inset 0 2rpx 4rpx rgba(0,0,0,0.05);
+    border: 2rpx solid #FFCDD2;
 }
 
 .input-text {
@@ -344,7 +345,7 @@ const saveImage = () => {
 }
 .fine-print {
     font-size: 18rpx;
-    color: #CCC;
+    color: #EF9A9A;
 }
 
 /* Stamp Button */
@@ -406,8 +407,8 @@ const saveImage = () => {
 
 .action-row { display: flex; width: 100%; gap: 30rpx; }
 .action-btn { flex: 1; border-radius: 20rpx; height: 100rpx; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 30rpx; box-shadow: 0 8rpx 16rpx rgba(0,0,0,0.1); }
-.btn-save { background: #333; color: #FFD700; }
-.btn-retry { background: #FFF; color: #333; }
+.btn-save { background: #D32F2F; color: #FFF; }
+.btn-retry { background: #FFF; color: #D32F2F; border: 2rpx solid #D32F2F; }
 
 /* Animation */
 @keyframes float {

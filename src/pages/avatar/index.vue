@@ -183,7 +183,7 @@ const saveToAlbum = () => {
 <style scoped>
 .container {
   min-height: 100vh;
-  background: linear-gradient(180deg, #E55D87 0%, #5FC3E4 100%); /* Vibrant Gradient */
+  background: linear-gradient(180deg, #D32F2F 0%, #FF8F00 100%); /* Red to Orange */
   display: flex;
   flex-direction: column;
   position: relative;
@@ -255,22 +255,23 @@ const saveToAlbum = () => {
 .mirror-frame {
     width: 500rpx;
     height: 500rpx;
-    background: linear-gradient(135deg, #FDB931 0%, #F9D976 25%, #F0E1A1 50%, #D4AF37 100%); /* Gold Gradient */
+    background: linear-gradient(135deg, #B71C1C 0%, #D32F2F 50%, #FF5252 100%);
     border-radius: 40rpx;
     padding: 20rpx;
-    box-shadow: 0 20rpx 50rpx rgba(0,0,0,0.3), inset 0 0 0 2rpx rgba(255,255,255,0.5);
+    box-shadow: 0 20rpx 50rpx rgba(0,0,0,0.4), inset 0 0 0 2rpx rgba(255,255,255,0.2);
     position: relative;
+    border: 4rpx solid #FFD700; /* Gold Border */
 }
 
 .frame-border {
-    width: 100%;
-    height: 100%;
+    width: 97%;
+    height: 97%;
     background: #000;
     border-radius: 30rpx;
     overflow: hidden;
     position: relative;
     background: #FFF;
-    border: 8rpx solid #114411; /* Jade Green Accent */
+    border: 8rpx solid #FFD700; /* Gold Inner Border */
 }
 
 /* Canvas & Preview */
@@ -345,7 +346,7 @@ const saveToAlbum = () => {
     bottom: 0;
     left: 0;
     width: 100%;
-    background: rgba(255,255,255,0.95);
+    background: #FFF8E1; /* Creamy Beige */
     border-radius: 40rpx 40rpx 0 0;
     padding: 40rpx 30rpx calc(40rpx + constant(safe-area-inset-bottom));
     box-sizing: border-box;
@@ -356,7 +357,7 @@ const saveToAlbum = () => {
 .selector-label {
     text-align: center;
     font-size: 24rpx;
-    color: #666;
+    color: #B71C1C;
     margin-bottom: 20rpx;
     font-weight: bold;
 }
@@ -396,7 +397,7 @@ const saveToAlbum = () => {
     justify-content: center;
     font-size: 50rpx;
     box-shadow: 0 8rpx 0 rgba(0,0,0,0.1); /* 3D effect */
-    border: 2rpx solid #EEE;
+    border: 4rpx solid #B71C1C;
     margin-bottom: 10rpx;
 }
 .sticker-item.active .sticker-icon-3d {
@@ -409,8 +410,8 @@ const saveToAlbum = () => {
 .sticker-name { font-size: 22rpx; color: #333; font-weight: bold; }
 
 .magic-btn {
-    background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
-    color: #fff;
+    background: linear-gradient(135deg, #FFD700 0%, #FFA000 100%); /* Gold Button */
+    color: #D32F2F; /* Red Text */
     border-radius: 60rpx;
     height: 100rpx;
     display: flex;
@@ -418,8 +419,8 @@ const saveToAlbum = () => {
     justify-content: center;
     font-size: 32rpx;
     font-weight: 900;
-    box-shadow: 0 10rpx 20rpx rgba(255, 107, 107, 0.4);
-    border: 4rpx solid rgba(255,255,255,0.3);
+    box-shadow: 0 10rpx 20rpx rgba(255, 160, 0, 0.4), inset 0 2rpx 4rpx rgba(255,255,255,0.5);
+    border: 2rpx solid #FFECB3;
 }
 .magic-icon { font-size: 40rpx; margin-right: 16rpx; }
 

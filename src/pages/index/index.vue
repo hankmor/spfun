@@ -71,17 +71,17 @@ const onImgError = (e, index) => {
 }
 
 const roles = [
-    { name: '势利二姨', desc: '工资才三千？', img: '/static/roles/aunt_money.jpeg', fallback: '🀄️', path: '/pages/chat/index?role=aunt_money', theme: 'theme-pink' },
-    { name: '催婚大姑', desc: '不结婚不孝！', img: '/static/roles/aunt_marriage.jpeg', fallback: '🤱', path: '/pages/chat/index?role=aunt_marriage', theme: 'theme-purple' },
-    { name: '凡尔赛王姨', desc: 'Lucy去巴黎了', img: '/static/roles/neighbor_showoff.jpeg', fallback: '👜', path: '/pages/chat/index?role=neighbor_showoff', theme: 'theme-yellow' },
-    { name: '严肃二舅', desc: '要有规划', img: '/static/roles/uncle_strict.jpeg', fallback: '♟️', path: '/pages/chat/index?role=uncle_strict', theme: 'theme-blue' }
+    { name: '势利二姨', desc: '工资才三千？', img: '/static/roles/aunt_money.jpeg', fallback: '🀄️', path: '/pages/chat/index?role=aunt_money', theme: 'theme-red' },
+    { name: '催婚大姑', desc: '不结婚不孝！', img: '/static/roles/aunt_marriage.jpeg', fallback: '🤱', path: '/pages/chat/index?role=aunt_marriage', theme: 'theme-coral' },
+    { name: '凡尔赛王姨', desc: 'Lucy去巴黎了', img: '/static/roles/neighbor_showoff.jpeg', fallback: '👜', path: '/pages/chat/index?role=neighbor_showoff', theme: 'theme-red' },
+    { name: '严肃二舅', desc: '要有规划', img: '/static/roles/uncle_strict.jpeg', fallback: '♟️', path: '/pages/chat/index?role=uncle_strict', theme: 'theme-coral' }
 ]
 </script>
 
 <style scoped>
 .container {
   min-height: 100vh;
-  background-color: #FFFBF0; /* Creamy color */
+  background-color: #FFF8E7; /* Creamy Beige */
   position: relative;
   overflow-x: hidden;
   padding-bottom: 220rpx; /* Space for dock */
@@ -96,11 +96,11 @@ const roles = [
     width: 100%;
     height: 100%;
     background-image: 
-        radial-gradient(#FFE0B2 10%, transparent 10%),
-        radial-gradient(#FFCCBC 10%, transparent 10%);
-    background-position: 0 0, 60rpx 60rpx;
-    background-size: 120rpx 120rpx;
-    opacity: 0.2;
+        radial-gradient(#FDE6CA 15%, transparent 15%),
+        radial-gradient(#FDE6CA 15%, transparent 15%);
+    background-position: 0 0, 40rpx 40rpx;
+    background-size: 80rpx 80rpx;
+    opacity: 0.4;
     z-index: 0;
     pointer-events: none;
 }
@@ -113,7 +113,7 @@ const roles = [
     height: 100%;
     background-image: radial-gradient(circle at 50% 50%, #fff 20%, transparent 60%);
     background-size: 300rpx 300rpx;
-    opacity: 0.4;
+    opacity: 0.6;
     z-index: 0;
     pointer-events: none;
     mix-blend-mode: overlay;
@@ -129,22 +129,23 @@ const roles = [
 .title {
     font-size: 64rpx;
     font-weight: 900;
-    color: #FF4757;
+    color: #D32F2F; /* Vermilion Red */
     letter-spacing: 4rpx;
-    text-shadow: 4rpx 4rpx 0rpx rgba(255, 200, 200, 0.4);
+    text-shadow: 2rpx 2rpx 0rpx rgba(255, 200, 200, 0.4);
     display: block;
 }
 
 .subtitle {
     font-size: 30rpx;
-    color: #FFA502;
+    color: #FF8F00; /* Amber */
     font-weight: 700;
     margin-top: 16rpx;
-    background: rgba(255, 255, 255, 0.8);
+    background: #FFF;
     padding: 8rpx 30rpx;
     border-radius: 30rpx;
     display: inline-block;
-    box-shadow: 0 4rpx 10rpx rgba(255, 165, 2, 0.15);
+    box-shadow: 0 4rpx 10rpx rgba(255, 143, 0, 0.15);
+    border: 2rpx solid #FFECB3;
 }
 
 /* Main Content Grid */
@@ -163,10 +164,10 @@ const roles = [
 .role-card {
     width: 48%;
     height: 380rpx;
-    background: #FFFFFF;
+    background: #f06262; /* Fallback */
     border-radius: 40rpx;
     position: relative;
-    box-shadow: 0 20rpx 40rpx rgba(200, 100, 100, 0.08);
+    box-shadow: 0 20rpx 40rpx rgba(211, 47, 47, 0.15);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -175,7 +176,11 @@ const roles = [
     margin-top: 30rpx; /* Space for speech bubble overlap */
     transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
     overflow: visible; /* Allow pop out */
+    border: 4rpx solid rgba(255,255,255,0.3);
 }
+
+.theme-red { background: linear-gradient(135deg, #f06262 0%, #e05858 100%); }
+.theme-coral { background: linear-gradient(135deg, #FF8A65 0%, #f06262 100%); }
 
 .role-card:active {
     transform: scale(0.96);
@@ -188,20 +193,20 @@ const roles = [
     top: -50rpx;
     left: 50%;
     transform: translateX(-50%);
-    background: #fff;
+    background: #FFF8E1; /* Light Yellow/Cream */
     padding: 14rpx 24rpx;
     border-radius: 24rpx;
-    box-shadow: 0 8rpx 20rpx rgba(0,0,0,0.06);
+    box-shadow: 0 8rpx 20rpx rgba(0,0,0,0.1);
     z-index: 10;
     white-space: nowrap;
-    border: 3rpx solid #FFF0F0;
+    border: 3rpx solid #FFECB3;
     animation: float 3s ease-in-out infinite;
     max-width: 140%;
 }
 
 .bubble-text {
     font-size: 24rpx;
-    color: #555;
+    color: #BF360C;
     font-weight: 800;
 }
 
@@ -214,7 +219,7 @@ const roles = [
     height: 0;
     border-left: 12rpx solid transparent;
     border-right: 12rpx solid transparent;
-    border-top: 12rpx solid #fff;
+    border-top: 12rpx solid #FFF8E1;
 }
 
 /* Image Wrapper for Pop-out Effect */
@@ -231,21 +236,21 @@ const roles = [
     width: 200rpx;
     height: 200rpx;
     border-radius: 50%;
-    border: 6rpx solid #fff;
-    box-shadow: 0 12rpx 24rpx rgba(0,0,0,0.12);
-    background: #f0f0f0;
+    border: 8rpx solid #FFF;
+    box-shadow: 0 12rpx 24rpx rgba(0,0,0,0.2);
+    background: #FFF;
 }
 
 .role-emoji-fallback {
     width: 200rpx;
     height: 200rpx;
     border-radius: 50%;
-    background: #fff;
+    background: #FFF;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 80rpx;
-    border: 6rpx solid #f0f0f0;
+    border: 8rpx solid #FFF;
 }
 
 /* Name Tag */
@@ -257,35 +262,31 @@ const roles = [
     justify-content: space-between;
     padding: 0 30rpx;
     box-sizing: border-box;
-    background: linear-gradient(to bottom, #ffffff, #fafafa);
-    border-radius: 0 0 40rpx 40rpx;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 0 0 36rpx 36rpx;
     z-index: 4;
+    border-top: 1rpx solid rgba(255,255,255,0.5);
 }
 
 .name-text {
     font-size: 32rpx;
     font-weight: 900;
-    color: #333;
+    color: #B71C1C;
 }
 
 .action-icon {
     width: 44rpx;
     height: 44rpx;
     border-radius: 50%;
-    background: #333;
-    color: #fff;
+    background: #FFD700;
+    color: #D32F2F;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 20rpx;
     font-weight: bold;
+    box-shadow: 0 4rpx 8rpx rgba(255, 215, 0, 0.4);
 }
-
-/* Themes */
-.theme-pink .action-icon { background: #FF9A9E; box-shadow: 0 4rpx 10rpx rgba(255, 154, 158, 0.4); }
-.theme-purple .action-icon { background: #BE93E4; box-shadow: 0 4rpx 10rpx rgba(190, 147, 228, 0.4); }
-.theme-yellow .action-icon { background: #F6D365; box-shadow: 0 4rpx 10rpx rgba(246, 211, 101, 0.4); }
-.theme-blue .action-icon { background: #4FACFE; box-shadow: 0 4rpx 10rpx rgba(79, 172, 254, 0.4); }
 
 /* Bottom Dock */
 .bottom-dock-container {
@@ -303,15 +304,14 @@ const roles = [
     pointer-events: auto;
     display: flex;
     align-items: center;
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    /* background: #FFF8E1; */
     padding: 12rpx;
     border-radius: 80rpx;
-    box-shadow: 0 20rpx 50rpx rgba(0,0,0,0.1), 0 0 0 2rpx rgba(255,255,255,0.6);
+    /* box-shadow: 0 20rpx 50rpx rgba(238, 234, 142, 0.3), inset 0 2rpx 4rpx rgba(255,255,255,0.3); */
     width: 85%;
     max-width: 600rpx;
     justify-content: space-between;
+    /* border: 4rpx solid #FFF8E1; */
 }
 
 .dock-btn {
@@ -326,13 +326,15 @@ const roles = [
 }
 
 .btn-deposit {
-    background: linear-gradient(135deg, #FFD700 0%, #FFA502 100%);
-    box-shadow: 0 8rpx 16rpx rgba(255, 165, 2, 0.3), inset 0 2rpx 4rpx rgba(255,255,255,0.4);
+    background: linear-gradient(135deg, #FFC107 0%, #FF8F00 100%);
+    box-shadow: 0 8rpx 16rpx rgba(0,0,0,0.15), inset 0 2rpx 4rpx rgba(255,255,255,0.5);
+    border: 2rpx solid #FFECB3;
 }
 
 .btn-avatar {
-    background: linear-gradient(135deg, #FF9A9E 0%, #FF6B6B 100%);
-    box-shadow: 0 8rpx 16rpx rgba(255, 107, 107, 0.3), inset 0 2rpx 4rpx rgba(255,255,255,0.4);
+    background: linear-gradient(135deg, #FF5252 0%, #D32F2F 100%);
+    box-shadow: 0 8rpx 16rpx rgba(0,0,0,0.15), inset 0 2rpx 4rpx rgba(255,255,255,0.3);
+    border: 2rpx solid #FFCDD2;
 }
 
 .icon-3d {
