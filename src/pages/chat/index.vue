@@ -45,9 +45,9 @@
                 <!-- Tools (Share/Score) for AI only -->
                 <view v-if="msg.role === 'ai'" class="bubble-footer">
                      <view v-if="msg.score" class="score-badge">🔥 杀伤力 {{ msg.score }}</view>
-                     <button class="action-btn" open-type="share" :data-msg="msg.content">
+                     <view class="action-btn" @click="openShare(msg.content)">
                         <text class="action-icon">↪️</text> 分享精彩回复
-                     </button>
+                     </view>
                 </view>
             </view>
         </view>
@@ -60,6 +60,29 @@
 
       <view id="bottom-anchor" class="anchor"></view>
     </scroll-view>
+
+    <!-- Share Modal -->
+    <view class="modal-mask" v-if="showModal" @click="closeModal">
+        <view class="modal-content" @click.stop>
+            <view class="modal-title">✨ 嘴替神回复 ✨</view>
+            
+            <view class="canvas-wrapper shadow-lg">
+                <image v-if="shareImagePath" :src="shareImagePath" class="share-preview" mode="aspectFit"></image>
+                <view v-else class="generating">
+                    <view class="loading-spinner"></view>
+                    <text>正在生成卡片...</text>
+                </view>
+            </view>
+
+            <view class="modal-btns">
+                <button class="m-btn btn-save" @click="saveShareImage">📥 保存图片</button>
+                <button class="m-btn btn-friend" open-type="share">💬 发给朋友</button>
+            </view>
+        </view>
+    </view>
+
+    <!-- Hidden Canvas -->
+    <canvas canvas-id="shareCanvas" id="shareCanvas" class="offscreen-canvas"></canvas>
 
     <!-- Bottom Input Area (Simplified) -->
     <view class="input-panel safe-area-bottom">
@@ -98,6 +121,11 @@ const loading = ref(false)
 const scrollTarget = ref('')
 const userProfile = ref(null)
 
+// Share State
+const showModal = ref(false)
+const shareImagePath = ref('')
+const currentShareText = ref('')
+
 const ROLE_INFO = {
   'aunt_money': { avatar: '/static/roles/aunt_money.jpeg', name: '势利二姨' },
   'aunt_marriage': { avatar: '/static/roles/aunt_marriage.jpeg', name: '催婚大姑' },
@@ -130,11 +158,15 @@ const formatTime = () => {
 }
 
 const checkUserProfile = () => {
-    const profile = uni.getStorageSync('user_profile')
-    if (profile) {
-        userProfile.value = profile
-    } else {
-         userProfile.value = { gender: 'unknown' } 
+    try {
+        const profile = uni.getStorageSync('user_profile')
+        if (profile && typeof profile === 'object') {
+            userProfile.value = profile
+        } else {
+            userProfile.value = { gender: 'unknown' } 
+        }
+    } catch (e) {
+        userProfile.value = { gender: 'unknown' }
     }
 }
 
@@ -181,20 +213,135 @@ const onCopy = (content) => {
     uni.setClipboardData({ data: content })
 }
 
+// --- Share Logic ---
+const openShare = (text) => {
+    currentShareText.value = text
+    showModal.value = true
+    shareImagePath.value = ''
+    setTimeout(() => { drawShareCard(text) }, 200)
+}
+
+const closeModal = () => {
+    showModal.value = false
+}
+
+const drawShareCard = (text) => {
+    const ctx = uni.createCanvasContext('shareCanvas')
+    const w = 300
+    const h = 400
+    
+    // Background
+    const grad = ctx.createLinearGradient(0, 0, 0, h)
+    grad.addColorStop(0, '#D32F2F')
+    grad.addColorStop(1, '#B71C1C')
+    ctx.setFillStyle(grad)
+    ctx.fillRect(0, 0, w, h)
+    
+    // Decoration Pattern (Circles)
+    ctx.setGlobalAlpha(0.1)
+    ctx.setFillStyle('#FFF')
+    ctx.beginPath()
+    ctx.arc(0, 0, 80, 0, 2*Math.PI)
+    ctx.fill()
+    ctx.beginPath()
+    ctx.arc(w, h, 100, 0, 2*Math.PI)
+    ctx.fill()
+    ctx.setGlobalAlpha(1.0)
+    
+    // Title
+    ctx.setFontSize(18)
+    ctx.setFillStyle('#FFCDD2')
+    ctx.setTextAlign('center')
+    ctx.fillText('春节嘴替大作战', w/2, 40)
+    
+    // Role Name
+    ctx.setFontSize(22)
+    ctx.setFillStyle('#FFF')
+    ctx.font = 'bold 22px sans-serif'
+    ctx.fillText(roleName.value + ' 说:', w/2, 80)
+    
+    // Quote Box
+    ctx.setFillStyle('#FFFFFF')
+    ctx.setShadow(0, 4, 10, 'rgba(0,0,0,0.2)')
+    const boxY = 110
+    const boxH = 200
+    // Rounded Rect
+    ctx.beginPath()
+    ctx.rect(30, boxY, w-60, boxH) // Simplified rect for now
+    ctx.fill()
+    ctx.setShadow(0, 0, 0, 'transparent')
+    
+    // Quote Text (Multiline)
+    ctx.setFontSize(18)
+    ctx.setFillStyle('#333')
+    ctx.setTextAlign('left')
+    const maxWidth = w - 100
+    const lineHeight = 28
+    let lines = []
+    let line = ''
+    
+    // Simple word wrap
+    for (let i = 0; i < text.length; i++) {
+        if (ctx.measureText(line + text[i]).width > maxWidth) {
+            lines.push(line)
+            line = ''
+        }
+        line += text[i]
+    }
+    lines.push(line)
+    
+    // Center text vertically in box
+    let textY = boxY + (boxH - (lines.length * lineHeight)) / 2 + 20
+    
+    // Draw Quote Icon
+    ctx.setFontSize(40)
+    ctx.setFillStyle('#FFEBEE')
+    ctx.fillText('“', 50, boxY + 50)
+    
+    ctx.setFontSize(18)
+    ctx.setFillStyle('#333')
+    lines.forEach((l, i) => {
+        ctx.fillText(l, 50, textY + i * lineHeight)
+    })
+    
+    // Footer
+    ctx.setFontSize(14)
+    ctx.setFillStyle('#FFCDD2')
+    ctx.setTextAlign('center')
+    ctx.fillText('快来一起对线！', w/2, h - 30)
+    
+    ctx.draw(false, () => {
+        uni.canvasToTempFilePath({
+            canvasId: 'shareCanvas',
+            width: w, height: h,
+            destWidth: w*2, destHeight: h*2,
+            success: (res) => {
+                shareImagePath.value = res.tempFilePath
+            }
+        })
+    })
+}
+
+const saveShareImage = () => {
+    if (!shareImagePath.value) return
+    uni.saveImageToPhotosAlbum({
+        filePath: shareImagePath.value,
+        success: () => uni.showToast({ title: '保存成功' }),
+        fail: () => uni.showToast({ title: '保存失败', icon: 'none' })
+    })
+}
+
 onShareAppMessage((res) => {
     let shareConfig = {
-        title: '春节嘴替大作战',
-        path: '/pages/index/index',
-        imageUrl: '/static/share_cover.png'
+        title: '春节嘴替大作战：' + (currentShareText.value ? currentShareText.value.substring(0, 15) + '...' : '来战！'),
+        path: `/pages/chat/index?role=${roleId.value}`
     }
 
-    if (res.from === 'button') {
-        const msg = res.target.dataset.msg
-        if (msg) {
-             shareConfig.title = `${roleName.value}：${msg.substring(0, 20)}...`
-             shareConfig.path = `/pages/chat/index?role=${roleId.value}`
-        }
+    // Use the generated image if available, else default behavior
+    if (shareImagePath.value) {
+        shareConfig.imageUrl = shareImagePath.value
     }
+
     return shareConfig
 })
 </script>
@@ -419,4 +566,92 @@ onShareAppMessage((res) => {
 @keyframes spin { 100% { transform: rotate(360deg); } }
 
 .anchor { height: 1rpx; width: 100%; }
+
+/* Share Modal */
+.modal-mask {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+.modal-content {
+    width: 600rpx;
+    background: #FFF;
+    border-radius: 24rpx;
+    padding: 30rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 10rpx 30rpx rgba(0,0,0,0.3);
+}
+
+.modal-title {
+    font-size: 32rpx;
+    font-weight: bold;
+    color: #D32F2F;
+    margin-bottom: 30rpx;
+}
+
+.canvas-wrapper {
+    width: 300px;
+    height: 400px;
+    background: #F5F5F5;
+    margin-bottom: 30rpx;
+    border-radius: 12rpx;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.share-preview {
+    width: 100%;
+    height: 100%;
+}
+
+.generating {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #999;
+    font-size: 24rpx;
+}
+
+.modal-btns {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    gap: 20rpx;
+}
+
+.m-btn {
+    flex: 1;
+    font-size: 28rpx;
+    border-radius: 40rpx;
+    padding: 20rpx 0;
+    line-height: 1.5;
+    font-weight: bold;
+}
+
+.btn-save {
+    background: #FFECB3;
+    color: #FF6F00;
+}
+
+.btn-friend {
+    background: #D32F2F;
+    color: #FFF;
+}
+
+/* Hidden Canvas */
+.offscreen-canvas {
+    position: fixed;
+    left: 9000px;
+    width: 300px;
+    height: 400px;
+}
 </style>
