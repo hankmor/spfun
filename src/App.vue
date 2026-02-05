@@ -21,4 +21,11 @@ export default {
 
 <style>
 /*每个页面公共css */
+@import './theme.css';
+
+page {
+  background-color: var(--bg-page);
+  color: var(--text-main);
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Segoe UI, Arial, Roboto, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft Yahei', sans-serif;
+}
 </style>
