@@ -72,7 +72,7 @@
                 confirm-type="send"
                 cursor-spacing="20"
                 @confirm="sendMessage"
-                placeholder="请输入..." 
+placeholder="这谁受的了..."
             />
             
             <view 
