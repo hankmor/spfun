@@ -32,14 +32,14 @@ exports.main = async (event, context) => {
     if (!limitStatus.allowed) {
         if (appConfig.ad_enabled) {
             return {
-                reply: '看个视频补充点能量，再来对线！',
+                reply: '累了吧？看个视频补充点能量，再来对线！',
                 limitHit: true,
                 action: 'show_ad',
                 adUnitId: appConfig.ad_unit_id
             }
         } else {
             return {
-                reply: '二姨去打麻将了，今天不聊了。（服务器维护中）',
+                reply: '二姨忙着去打麻将了，今天不聊了，明天继续哦。',
                 limitHit: true,
                 action: 'stop'
             }
@@ -51,8 +51,20 @@ exports.main = async (event, context) => {
         // const secResult = await cloud.openapi.security.msgSecCheck({ content: message })
 
         // 3. AI Generation
-        const systemPrompt = ROLES[roleId].system
-        const result = await generateReply(systemPrompt, message)
+        let systemPrompt = ROLES[roleId].system
+
+        // Inject User Profile if available
+        if (event.userProfile) {
+            const { gender, status } = event.userProfile
+            const genderStr = gender === 'male' ? '男性' : (gender === 'female' ? '女性' : '')
+            const statusStr = status === 'student' ? '学生' : (status === 'worker' ? '打工人' : '')
+
+            if (genderStr || statusStr) {
+                systemPrompt += `\n[当前对话者信息]\n性别：${genderStr || '未知'}\n身份：${statusStr || '未知'}\n请针对该身份进行有针对性的回复。`
+            }
+        }
+
+        const result = await generateReply(systemPrompt, event.history || [], message)
 
         // 4. Score Calculation (Business Logic)
         const { minScore, scoreRange } = config.defaults

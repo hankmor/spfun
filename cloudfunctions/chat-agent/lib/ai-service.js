@@ -7,27 +7,41 @@ const config = require('../config')
  * @param {string} userMessage 
  * @returns {Promise<{content: string}>}
  */
-async function generateReply(systemPrompt, userMessage) {
+/**
+ * Call DeepSeek AI Service
+ * @param {string} systemPrompt 
+ * @param {Array} historyMessages 
+ * @param {string} userMessage 
+ * @returns {Promise<{content: string}>}
+ */
+async function generateReply(systemPrompt, historyMessages, userMessage) {
     const { apiKey, apiUrl, model, temperature } = config.deepseek
 
     if (!apiKey) {
-        throw new Error('Missing DeepSeek API Key. Please set DEEPSEEK_API_KEY in Cloud Function Env Vars.')
+        throw new Error('Missing DeepSeek API Key')
     }
+
+    // specific handling for array/string mismatch
+    const history = Array.isArray(historyMessages) ? historyMessages : []
+
+    // Construct Messages
+    const messages = [
+        { role: "system", content: systemPrompt },
+        ...history,
+        { role: "user", content: userMessage }
+    ]
 
     try {
         const response = await axios.post(apiUrl, {
             model: model,
-            messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: userMessage }
-            ],
+            messages: messages,
             temperature: temperature
         }, {
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json'
             },
-            timeout: 10000 // 10s timeout
+            timeout: 15000 
         })
 
         return {
@@ -35,7 +49,7 @@ async function generateReply(systemPrompt, userMessage) {
         }
     } catch (error) {
         console.error('DeepSeek API Error:', error.response ? error.response.data : error.message)
-        throw new Error('AI Service Unavailable') // Mask error details from client
+        throw new Error('AI Service Unavailable')
     }
 }
 

@@ -50,13 +50,50 @@ const ROLE_ICONS = {
   'uncle_strict': '👴'
 }
 
+const userProfile = ref(null)
+
 onLoad((options) => {
   roleId.value = options.role || 'aunt_money'
   roleIcon.value = ROLE_ICONS[roleId.value] || '🤖'
   
-  // Initial Greeting
+  // 1. Check User Profile
+  checkUserProfile()
+
+  // 2. Initial Greeting
   messages.value.push({ role: 'ai', content: getGreeting(roleId.value) })
 })
+
+const checkUserProfile = () => {
+    const profile = uni.getStorageSync('user_profile')
+    if (profile) {
+        userProfile.value = profile
+    } else {
+        // Simple 2-step setup
+        uni.showModal({
+            title: '初次见面',
+            content: '二姨眼花，你是男生还是女生呀？',
+            confirmText: '我是男生',
+            cancelText: '我是女生',
+            success: (res) => {
+                const gender = res.confirm ? 'male' : 'female'
+                
+                uni.showActionSheet({
+                    itemList: ['还在上学', '苦逼打工人', '我也退休了'],
+                    success: (res2) => {
+                        let status = 'worker'
+                        if (res2.tapIndex === 0) status = 'student'
+                        if (res2.tapIndex === 2) status = 'retired'
+                        
+                        userProfile.value = { gender, status }
+                        uni.setStorageSync('user_profile', userProfile.value)
+                        
+                        uni.showToast({ title: '记住你了！', icon: 'none' })
+                    }
+                })
+            }
+        })
+    }
+}
 
 const getGreeting = (id) => {
   const map = {
@@ -79,11 +116,23 @@ const sendMessage = async () => {
   loading.value = true
   
   try {
+    // Construct History (Last 6 messages, exclude greeting if needed, map to standard format)
+    // DeepSeek format: { role: 'user'|'assistant', content: string }
+    const history = messages.value
+        .slice(-6) // Keep last 6
+        .filter(m => m.role !== 'system') // Filter out UI msgs if any
+        .map(m => ({
+            role: m.role === 'ai' ? 'assistant' : 'user',
+            content: m.content
+        }))
+
     const res = await uni.cloud.callFunction({
       name: 'chat-agent',
       data: {
         message: userText,
-        roleId: roleId.value
+        roleId: roleId.value,
+        userProfile: userProfile.value,
+        history: history
       }
     })
     
