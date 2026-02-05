@@ -25,7 +25,7 @@
         <!-- Avatar -->
         <image 
             class="avatar" 
-            :src="msg.role === 'user' ? (userProfile?.avatarUrl || '/static/default_avatar.png') : roleAvatar" 
+            :src="msg.role === 'user' ? (userProfile?.avatarUrl || '/static/logo.jpeg') : roleAvatar" 
             mode="aspectFill"
         ></image>
 
@@ -64,7 +64,7 @@
     <!-- Share Modal -->
     <view class="modal-mask" v-if="showModal" @click="closeModal">
         <view class="modal-content" @click.stop>
-            <view class="modal-title">✨ 嘴替神回复 ✨</view>
+            <view class="modal-title">春节大作战</view>
             
             <view class="canvas-wrapper shadow-lg">
                 <image v-if="shareImagePath" :src="shareImagePath" class="share-preview" mode="aspectFit"></image>
@@ -114,7 +114,7 @@ import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 
 const roleId = ref('')
 const roleAvatar = ref('')
-const roleName = ref('AI亲戚') 
+const roleName = ref('AI嘴替') 
 const messages = ref([])
 const inputContent = ref('')
 const loading = ref(false)
@@ -141,8 +141,8 @@ onLoad((options) => {
   
   uni.setNavigationBarTitle({ title: info.name }) 
   uni.setNavigationBarColor({
-      frontColor: '#FFFFFF',
-      backgroundColor: '#D32F2F' // Red Header
+      frontColor: '#ffffff',
+      backgroundColor: '#d32f2f' // Red Header
   })
 
   checkUserProfile()
@@ -171,7 +171,7 @@ const checkUserProfile = () => {
 }
 
 const getGreeting = (id) => {
-    return '哎哟，你回来啦。' 
+    return '哎哟，你回来啦。哎哟，你回来啦。哎哟，你回来啦。哎哟，你回来啦。哎哟，你回来啦。哎哟，你回来啦。哎哟，你回来啦。' 
 }
 
 const sendMessage = async () => {
@@ -226,99 +226,178 @@ const closeModal = () => {
 }
 
 const drawShareCard = (text) => {
-    const ctx = uni.createCanvasContext('shareCanvas')
     const w = 300
     const h = 400
-    
-    // Background
-    const grad = ctx.createLinearGradient(0, 0, 0, h)
-    grad.addColorStop(0, '#D32F2F')
-    grad.addColorStop(1, '#B71C1C')
-    ctx.setFillStyle(grad)
-    ctx.fillRect(0, 0, w, h)
-    
-    // Decoration Pattern (Circles)
-    ctx.setGlobalAlpha(0.1)
-    ctx.setFillStyle('#FFF')
-    ctx.beginPath()
-    ctx.arc(0, 0, 80, 0, 2*Math.PI)
-    ctx.fill()
-    ctx.beginPath()
-    ctx.arc(w, h, 100, 0, 2*Math.PI)
-    ctx.fill()
-    ctx.setGlobalAlpha(1.0)
-    
-    // Title
-    ctx.setFontSize(18)
-    ctx.setFillStyle('#FFCDD2')
-    ctx.setTextAlign('center')
-    ctx.fillText('春节嘴替大作战', w/2, 40)
-    
-    // Role Name
-    ctx.setFontSize(22)
-    ctx.setFillStyle('#FFF')
-    ctx.font = 'bold 22px sans-serif'
-    ctx.fillText(roleName.value + ' 说:', w/2, 80)
-    
-    // Quote Box
-    ctx.setFillStyle('#FFFFFF')
-    ctx.setShadow(0, 4, 10, 'rgba(0,0,0,0.2)')
-    const boxY = 110
-    const boxH = 200
-    // Rounded Rect
-    ctx.beginPath()
-    ctx.rect(30, boxY, w-60, boxH) // Simplified rect for now
-    ctx.fill()
-    ctx.setShadow(0, 0, 0, 'transparent')
-    
-    // Quote Text (Multiline)
-    ctx.setFontSize(18)
-    ctx.setFillStyle('#333')
-    ctx.setTextAlign('left')
-    const maxWidth = w - 100
-    const lineHeight = 28
-    let lines = []
-    let line = ''
-    
-    // Simple word wrap
-    for (let i = 0; i < text.length; i++) {
-        if (ctx.measureText(line + text[i]).width > maxWidth) {
-            lines.push(line)
-            line = ''
-        }
-        line += text[i]
-    }
-    lines.push(line)
-    
-    // Center text vertically in box
-    let textY = boxY + (boxH - (lines.length * lineHeight)) / 2 + 20
-    
-    // Draw Quote Icon
-    ctx.setFontSize(40)
-    ctx.setFillStyle('#FFEBEE')
-    ctx.fillText('“', 50, boxY + 50)
-    
-    ctx.setFontSize(18)
-    ctx.setFillStyle('#333')
-    lines.forEach((l, i) => {
-        ctx.fillText(l, 50, textY + i * lineHeight)
-    })
-    
-    // Footer
-    ctx.setFontSize(14)
-    ctx.setFillStyle('#FFCDD2')
-    ctx.setTextAlign('center')
-    ctx.fillText('快来一起对线！', w/2, h - 30)
-    
-    ctx.draw(false, () => {
-        uni.canvasToTempFilePath({
-            canvasId: 'shareCanvas',
-            width: w, height: h,
-            destWidth: w*2, destHeight: h*2,
-            success: (res) => {
-                shareImagePath.value = res.tempFilePath
+    const avatarSrc = roleAvatar.value || '/static/logo.jpeg'
+
+    // 先获取头像真实宽高，避免拉伸
+    uni.getImageInfo({
+        src: avatarSrc,
+        success: (info) => {
+            const ctx = uni.createCanvasContext('shareCanvas')
+
+            // Background
+            const grad = ctx.createLinearGradient(0, 0, 0, h)
+            grad.addColorStop(0, '#d32f2f')
+            grad.addColorStop(1, '#b71c1c')
+            ctx.setFillStyle(grad)
+            ctx.fillRect(0, 0, w, h)
+            
+            // Decoration Pattern (Circles)
+            ctx.setGlobalAlpha(0.1)
+            ctx.setFillStyle('#ffffff')
+            ctx.beginPath()
+            ctx.arc(0, 0, 80, 0, 2 * Math.PI)
+            ctx.fill()
+            ctx.beginPath()
+            ctx.arc(w, h, 100, 0, 2 * Math.PI)
+            ctx.fill()
+            ctx.setGlobalAlpha(1.0)
+            
+            // Top avatar (center) - 按照居中裁剪成正方形再画到圆里，防止变形
+            const avatarSize = 80
+            const avatarX = w / 2
+            const avatarY = 70
+
+            const imgW = info.width
+            const imgH = info.height
+            const squareSize = Math.min(imgW, imgH)
+            const sx = (imgW - squareSize) / 2
+            const sy = (imgH - squareSize) / 2
+
+            ctx.save()
+            ctx.beginPath()
+            ctx.arc(avatarX, avatarY, avatarSize / 2, 0, 2 * Math.PI)
+            ctx.clip()
+            ctx.drawImage(
+                avatarSrc,
+                sx,
+                sy,
+                squareSize,
+                squareSize,
+                avatarX - avatarSize / 2,
+                avatarY - avatarSize / 2,
+                avatarSize,
+                avatarSize
+            )
+            ctx.restore()
+
+            // Header text: "XXX 又怼我了，求帮忙～" (centered)
+            const headerText = `${roleName.value}又怼我了，求帮忙～`
+            ctx.setFontSize(18)
+            ctx.setFillStyle('#ffffff')
+            ctx.setTextAlign('center')
+            ctx.font = 'bold 18px sans-serif'
+            ctx.fillText(headerText, w / 2, avatarY + avatarSize / 2 + 30)
+            
+            // Quote Box
+            ctx.setFillStyle('#ffffff')
+            ctx.setShadow(0, 4, 10, 'rgba(0,0,0,0.2)')
+            const boxY = 160
+            const boxH = 170
+            ctx.beginPath()
+            ctx.rect(30, boxY, w - 60, boxH)
+            ctx.fill()
+            ctx.setShadow(0, 0, 0, 'transparent')
+            
+            // Quote Text (Multiline)
+            ctx.setFontSize(16)
+            ctx.setFillStyle('#333333')
+            ctx.setTextAlign('left')
+            const paddingX = 40
+            const maxWidth = w - paddingX * 2
+            const lineHeight = 16
+            let lines = []
+            let line = ''
+            
+            for (let i = 0; i < text.length; i++) {
+                if (ctx.measureText(line + text[i]).width > maxWidth) {
+                    lines.push(line)
+                    line = ''
+                }
+                line += text[i]
             }
-        })
+            if (line) {
+                lines.push(line)
+            }
+            
+            // Center text vertically in box
+            let textY = boxY + (boxH - (lines.length * lineHeight)) / 2 + 20
+            
+            // Draw Quote Icon
+            ctx.setFontSize(30)
+            ctx.setFillStyle('#ffebee')
+            ctx.fillText('“', paddingX, boxY + 40)
+            
+            ctx.setFontSize(16)
+            ctx.setFillStyle('#333333')
+            lines.forEach((l, i) => {
+                ctx.fillText(l, paddingX, textY + i * lineHeight)
+            })
+            
+            // Footer（稍微往上提一点，避免被裁掉）
+            ctx.setFontSize(16)
+            ctx.setFillStyle('#ffcdd2')
+            ctx.setTextAlign('center')
+            ctx.fillText('春节战火不断，快来帮忙！', w / 2, h - 30)
+            
+            ctx.draw(false, () => {
+                uni.canvasToTempFilePath({
+                    canvasId: 'shareCanvas',
+                    width: w,
+                    height: h,
+                    // 按实际绘制尺寸导出，避免二次放大导致模糊
+                    destWidth: w,
+                    destHeight: h,
+                    success: (res) => {
+                        shareImagePath.value = res.tempFilePath
+                    }
+                })
+            })
+        },
+        fail: () => {
+            // 获取图片信息失败时，退回到不裁剪的简单版本（避免整卡片挂掉）
+            const ctx = uni.createCanvasContext('shareCanvas')
+            const grad = ctx.createLinearGradient(0, 0, 0, h)
+            grad.addColorStop(0, '#d32f2f')
+            grad.addColorStop(1, '#b71c1c')
+            ctx.setFillStyle(grad)
+            ctx.fillRect(0, 0, w, h)
+
+            ctx.setFontSize(18)
+            ctx.setFillStyle('#ffffff')
+            ctx.setTextAlign('center')
+            ctx.fillText(`${roleName.value}又怼我了，求帮忙～`, w / 2, 60)
+
+            ctx.setFillStyle('#ffffff')
+            ctx.beginPath()
+            ctx.rect(30, 100, w - 60, 220)
+            ctx.fill()
+
+            ctx.setFontSize(20)
+            ctx.setFillStyle('#333333')
+            ctx.setTextAlign('left')
+            ctx.fillText(text, 50, 180)
+
+            ctx.setFontSize(16)
+            ctx.setFillStyle('#ffcdd2')
+            ctx.setTextAlign('center')
+            ctx.fillText('春节战火不断，快来帮忙！', w / 2, h - 40)
+
+            ctx.draw(false, () => {
+                uni.canvasToTempFilePath({
+                    canvasId: 'shareCanvas',
+                    width: w,
+                    height: h,
+                    // 按实际绘制尺寸导出，避免二次放大导致模糊
+                    destWidth: w,
+                    destHeight: h,
+                    success: (res) => {
+                        shareImagePath.value = res.tempFilePath
+                    }
+                })
+            })
+        }
     })
 }
 
