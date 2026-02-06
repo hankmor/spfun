@@ -33,26 +33,25 @@
 
                 <view class="input-group">
                     <text class="label">存入时间 (好怀念但回不去了)</text>
-                    <view class="date-display">2010年 春节</view>
+                    <view class="date-display">2010年春节</view>
                 </view>
 
                 <view class="input-group">
                     <text class="label">妈妈的理由</text>
-                    <picker mode="selector" :range="REASONS" @change="onReasonChange">
-                        <view class="picker-box">
-                            {{ form.reason || '点击选择理由...' }}
-                            <text class="arrow">▼</text>
-                        </view>
-                    </picker>
+                    <view class="picker-box" hover-class="picker-hover" @click="showReasonPicker">
+                        <text class="picker-text">{{ form.reason || '点击选择理由...' }}</text>
+                        <text class="arrow">▼</text>
+                    </view>
                 </view>
             </view>
 
             <view class="footer">
                 <button class="btn-deposit hover-scale" @click="submitDeposit">
                     <text class="btn-main">确认上交</text>
-                    <text class="btn-sub">盖章生效 · 概不退还</text>
+                    <!-- <text class="btn-sub">盖章生效 · 概不退还</text> -->
                 </button>
                 <text class="disclaimer">本解释权归妈妈所有，如有异议，憋着。</text>
+                <text class="entertainment-hint">仅供娱乐消遣，切勿当真</text>
             </view>
         </view>
 
@@ -60,7 +59,7 @@
         <view class="modal-mask anim-fade-in" v-if="showResult" @click="closeResult">
             <view class="modal-content" @click.stop>
                 <view class="modal-header">
-                    <text class="modal-title">📉 扎心了旧时光</text>
+                    <text class="modal-title">扎心了💔旧时光</text>
                     <view class="close-btn" @click="closeResult">✕</view>
                 </view>
 
@@ -128,12 +127,17 @@ const form = reactive({
 })
 const showResult = ref(false)
 const posterPath = ref('')
-const canvasWidth = ref(375)
+const canvasWidth = ref(325)
 const canvasHeight = ref(600)
 
 // Methods
-const onReasonChange = (e) => {
-    form.reason = REASONS[e.detail.value]
+const showReasonPicker = () => {
+    uni.showActionSheet({
+        itemList: REASONS,
+        success: (res) => {
+            form.reason = REASONS[res.tapIndex]
+        }
+    })
 }
 
 const submitDeposit = () => {
@@ -277,17 +281,12 @@ const generatePoster = async () => {
     ctx.fillStyle = '#333'
     ctx.font = 'normal 14px sans-serif'
     const reason = form.reason
-    if (reason.length > 12) {
-        ctx.fillText(reason.substring(0, 12), startX, cursorY + 20)
-        ctx.fillText(reason.substring(12), startX, cursorY + 38)
-    } else {
-        ctx.fillText(reason, startX, cursorY + 20)
-    }
+    ctx.fillText(reason, startX, cursorY + 20)
 
     // Stamp
     ctx.save()
-    ctx.translate(paperX + paperW - 70, paperY + paperH - 70)
-    ctx.rotate(-15 * Math.PI / 180)
+    ctx.translate(paperX + paperW - 60, paperY + paperH - 55)
+    ctx.rotate(-25 * Math.PI / 180)
     ctx.beginPath()
     ctx.arc(0, 0, 40, 0, 2 * Math.PI)
     ctx.setStrokeStyle('rgba(211, 47, 47, 0.6)')
@@ -300,10 +299,10 @@ const generatePoster = async () => {
     ctx.fillStyle = 'rgba(211, 47, 47, 0.6)'
     ctx.setTextAlign('center')
     ctx.font = 'bold 12px sans-serif'
-    ctx.fillText("MOM BANK", 0, -12)
-    ctx.fillText("保管专用", 0, 5)
+    ctx.fillText("MOM BANK", 0, -5)
+    ctx.fillText("保管专用", 0, 10)
     ctx.setFontSize(10)
-    ctx.fillText("2026", 0, 20)
+    ctx.fillText("2026", 0, 30)
     ctx.restore()
 
     // 3. The "Truth" Section (Bottom Dark Area)
@@ -433,6 +432,8 @@ onShareAppMessage(() => {
     padding: 0;
     box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.2);
     overflow: hidden;
+    position: relative;
+    z-index: 10;
 }
 
 .card-header {
@@ -507,11 +508,20 @@ onShareAppMessage(() => {
 .picker-box {
     font-size: 30rpx;
     color: #333;
-    padding: 20rpx 0;
+    padding: 24rpx 0;
     border-bottom: 2rpx solid #E0E0E0;
     display: flex;
     justify-content: space-between;
+    align-items: center;
     width: 100%;
+}
+
+.picker-text {
+    flex: 1;
+}
+
+.picker-hover {
+    background-color: rgba(0, 0, 0, 0.05);
 }
 
 .arrow {
@@ -555,6 +565,13 @@ onShareAppMessage(() => {
     font-size: 20rpx;
     color: #BBB;
     margin-top: 24rpx;
+    display: block;
+}
+
+.entertainment-hint {
+    font-size: 18rpx;
+    color: rgba(0, 0, 0, 0.2);
+    margin-top: 10rpx;
     display: block;
 }
 
