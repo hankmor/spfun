@@ -14,7 +14,7 @@
     <view class="main-content">
       <view class="role-grid">
         <view 
-          v-for="(role, index) in roles" 
+v-for="(role, index) in rolesData"
           :key="index"
           class="role-card"
           :class="role.theme"
@@ -60,6 +60,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
 import { AUNT_MONEY_PIC, AUNT_MARRIAGE_PIC, NEIGHBOR_SHOWOFF_PIC, UNCLE_STRICT_PIC } from '../../constants/roles'
 
 const navTo = (url) => {
@@ -71,12 +72,47 @@ const onImgError = (e, index) => {
     imgErrors.value[index] = true
 }
 
-const roles = [
-    { name: '势利二姨', desc: '工资才三千？', img: AUNT_MONEY_PIC, fallback: '🀄️', path: '/pages/chat/index?role=aunt_money', theme: 'theme-red' },
-    { name: '催婚大姑', desc: '不结婚不孝！', img: AUNT_MARRIAGE_PIC, fallback: '🤱', path: '/pages/chat/index?role=aunt_marriage', theme: 'theme-coral' },
-    { name: '凡尔赛王姨', desc: 'Lucy去巴黎了', img: NEIGHBOR_SHOWOFF_PIC, fallback: '👜', path: '/pages/chat/index?role=neighbor_showoff', theme: 'theme-red' },
-    { name: '严肃二舅', desc: '要有规划', img: UNCLE_STRICT_PIC, fallback: '♟️', path: '/pages/chat/index?role=uncle_strict', theme: 'theme-coral' }
-]
+const rolesData = ref([
+    { name: '势利二姨', desc: '工资才三千？', cloudId: AUNT_MONEY_PIC, img: '', fallback: '🀄️', path: '/pages/chat/index?role=aunt_money', theme: 'theme-red' },
+    { name: '催婚大姑', desc: '不结婚不孝！', cloudId: AUNT_MARRIAGE_PIC, img: '', fallback: '🤱', path: '/pages/chat/index?role=aunt_marriage', theme: 'theme-coral' },
+    { name: '凡尔赛王姨', desc: 'Lucy去巴黎了', cloudId: NEIGHBOR_SHOWOFF_PIC, img: '', fallback: '👜', path: '/pages/chat/index?role=neighbor_showoff', theme: 'theme-red' },
+    { name: '严肃二舅', desc: '要有规划', cloudId: UNCLE_STRICT_PIC, img: '', fallback: '♟️', path: '/pages/chat/index?role=uncle_strict', theme: 'theme-coral' }
+])
+
+onLoad(() => {
+    resolveCloudUrls()
+})
+
+const resolveCloudUrls = async () => {
+    const fileList = rolesData.value.map(r => r.cloudId)
+    console.log('开始解析首页云文件(输入):', fileList)
+    try {
+        const res = await uni.cloud.getTempFileURL({ fileList })
+        console.log('云文件解析结果(原始返回):', res)
+
+        if (res.fileList && res.fileList.length > 0) {
+            const urlMap = {}
+            res.fileList.forEach(item => {
+                console.log(`解析项: ID=${item.fileID}, Status=${item.status}, Err=${item.errMsg}`)
+                if (item.tempFileURL) {
+                    urlMap[item.fileID] = item.tempFileURL
+                }
+            })
+
+            let updatedCount = 0
+            rolesData.value.forEach(role => {
+                // 尝试完全匹配或忽略前缀差异
+                if (urlMap[role.cloudId]) {
+                    role.img = urlMap[role.cloudId]
+                    updatedCount++
+                }
+            })
+            console.log(`首页更新完成，成功更新 ${updatedCount} 个角色头像`)
+        }
+    } catch (e) {
+        console.error('首页解析云文件失败:', e)
+    }
+}
 </script>
 
 <style scoped>
@@ -226,7 +262,8 @@ const roles = [
 /* Image Wrapper for Pop-out Effect */
 .image-wrapper {
     position: absolute;
-    bottom: 90rpx; /* sits above name tag */
+    bottom: 130rpx;
+        /* sits above name tag */
     width: 100%;
     display: flex;
     justify-content: center;
