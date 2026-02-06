@@ -1,418 +1,724 @@
 <template>
-  <view class="container">
-    <!-- Background Decor (Coins) -->
-    <view class="bg-coins"></view>
+    <view class="container">
+        <!-- Background: Red Envelope Theme -->
+        <view class="bg-pattern"></view>
 
-    <!-- Header (Piggy Bank) -->
-    <view class="piggy-header anim-bounce">
-       <view class="piggy-icon">🐷</view>
-       <view class="gold-pile">💰💰💰</view>
+        <!-- Header -->
+        <view class="header anim-slide-down">
+            <view class="logo-text">MOM'S BANK</view>
+            <view class="sub-text">妈妈银行 · 极速“存款”</view>
+        </view>
+
+        <!-- Main Form Card -->
+        <view class="card form-card anim-slide-up" v-if="!showResult">
+            <view class="card-header">
+                <text class="title">🧧 压岁钱存入处</text>
+            </view>
+
+            <view class="form-body">
+                <view class="input-group">
+                    <text class="label">存户姓名 (谁是那个倒霉蛋)</text>
+                    <input class="input" type="nickname" v-model="form.name" placeholder="点击填入你的名称"
+                        placeholder-class="ph-style" />
+                </view>
+
+                <view class="input-group">
+                    <text class="label">存入金额 (当年的那笔巨款)</text>
+                    <view class="amount-wrapper">
+                        <text class="currency">¥</text>
+                        <input class="input amount-input" type="digit" v-model="form.amount" placeholder="1200"
+                            placeholder-class="ph-style" />
+                    </view>
+                </view>
+
+                <view class="input-group">
+                    <text class="label">存入时间 (好怀念但回不去了)</text>
+                    <view class="date-display">2010年 春节</view>
+                </view>
+
+                <view class="input-group">
+                    <text class="label">妈妈的理由</text>
+                    <picker mode="selector" :range="REASONS" @change="onReasonChange">
+                        <view class="picker-box">
+                            {{ form.reason || '点击选择理由...' }}
+                            <text class="arrow">▼</text>
+                        </view>
+                    </picker>
+                </view>
+            </view>
+
+            <view class="footer">
+                <button class="btn-deposit hover-scale" @click="submitDeposit">
+                    <text class="btn-main">确认上交</text>
+                    <text class="btn-sub">盖章生效 · 概不退还</text>
+                </button>
+                <text class="disclaimer">本解释权归妈妈所有，如有异议，憋着。</text>
+            </view>
+        </view>
+
+        <!-- Result / Poster Preview Modal -->
+        <view class="modal-mask anim-fade-in" v-if="showResult" @click="closeResult">
+            <view class="modal-content" @click.stop>
+                <view class="modal-header">
+                    <text class="modal-title">📉 扎心了旧时光</text>
+                    <view class="close-btn" @click="closeResult">✕</view>
+                </view>
+
+                <!-- Canvas Preview Area -->
+                <view class="canvas-wrapper shadow-lg">
+                    <image v-if="posterPath" :src="posterPath" class="poster-preview" mode="aspectFit"></image>
+                    <view v-else class="generating">
+                        <view class="loading-spinner"></view>
+                        <text>正在计算“损失”...</text>
+                    </view>
+                </view>
+
+                <view class="modal-btns">
+                    <button class="m-btn btn-save" @click="savePoster">📥 保存证据</button>
+                    <button class="m-btn btn-share" open-type="share">🔥 挂人曝光</button>
+                </view>
+            </view>
+        </view>
+
+        <!-- Hidden Canvas -->
+        <canvas canvas-id="posterCanvas" id="posterCanvas" class="offscreen-canvas"
+            :style="{ width: canvasWidth + 'px', height: canvasHeight + 'px' }"></canvas>
+
     </view>
-
-    <!-- Form Area (Receipt Card) -->
-    <view class="receipt-container anim-slide-up" v-if="!generated">
-       <!-- Jagged Top (Optional, but using regular border radius for now) -->
-       
-       <!-- Receipt Body -->
-       <view class="receipt-paper">
-           <view class="receipt-header">
-               <text class="receipt-title">MOM'S BANK</text>
-               <text class="receipt-sub">定期存款单</text>
-           </view>
-           
-           <view class="dotted-line"></view>
-
-           <!-- Engraved Inputs -->
-           <view class="input-section">
-               <view class="input-group">
-                   <text class="label">NAME / 存户姓名</text>
-                   <view class="engraved-box">
-                       <input class="input-text" v-model="form.name" placeholder="Name" placeholder-class="ph-style"/>
-                   </view>
-               </view>
-
-               <view class="input-group">
-                   <text class="label">AMOUNT / 金额 (CNY)</text>
-                   <view class="engraved-box">
-                       <input class="input-text" type="digit" v-model="form.amount" placeholder="¥ 8888" placeholder-class="ph-style"/>
-                   </view>
-               </view>
-               
-               <view class="input-group">
-                   <text class="label">REASON / 存入理由</text>
-                   <view class="engraved-box">
-                       <input class="input-text" v-model="form.reason" placeholder="压岁钱..." placeholder-class="ph-style"/>
-                   </view>
-               </view>
-           </view>
-
-           <view class="receipt-footer">
-               <text class="fine-print">*本凭证解释权归妈妈所有</text>
-           </view>
-
-           <!-- Jagged Bottom Edge -->
-           <view class="jagged-edge"></view>
-       </view>
-
-       <!-- Stamp Button -->
-       <view class="stamp-btn-wrapper">
-           <view class="stamp-btn hover-scale" @click="generateReceipt">
-               <view class="stamp-inner">
-                   <text class="stamp-text">SEAL</text>
-                   <text class="stamp-sub">盖章存入</text>
-               </view>
-           </view>
-       </view>
-    </view>
-
-    <!-- Preview Area -->
-    <view class="preview-area anim-fade-in" v-else>
-       <view class="piggy-header-small">🐷</view>
-       <view class="canvas-box shadow-lg">
-         <canvas canvas-id="bankCanvas" id="bankCanvas" class="bank-canvas"></canvas>
-       </view>
-       
-       <view class="action-row">
-         <button class="action-btn btn-save" @click="saveImage">保存凭证</button>
-         <button class="action-btn btn-retry" @click="generated = false">再存一笔</button>
-       </view>
-    </view>
-
-  </view>
 </template>
 
 <script setup>
 import { ref, reactive } from 'vue'
+import { onShareAppMessage } from '@dcloudio/uni-app'
+import { LOGO_PIC } from '../../constants/roles' // Assume Logo is available
 
+// Constants
+const REASONS = [
+    '先帮你存着，以后给你娶媳妇',
+    '你还小，身上放钱不安全',
+    '这钱是爸妈换出去的，得还',
+    '正好凑个整，给你交学费',
+    '帮你买了那个什么保险',
+    '帮你存着，等你长大还给你'
+]
+
+const LIE_QUOTES = [
+    '妈妈：先帮你存着。\n现实：第二天就变成了家里的排骨。',
+    '妈妈：等你长大了就还给你。\n现实：长大后她问你“啥钱？”',
+    '妈妈：这点钱我看不上。\n现实：连你的硬币罐都掏空了。',
+    '妈妈：帮你交学费了。\n现实：九年义务教育明明免费！',
+    '妈妈：那是人情往来。\n现实：往来只有出，没有进。',
+    '妈妈：存银行吃利息。\n现实：利息没见着，本金也没了。',
+    '妈妈：怕你乱花。\n现实：她花得比你开心多了。',
+    '妈妈：以后给你买房。\n现实：首付还得你自己凑。'
+]
+
+const INVESTMENTS = [
+    { name: '茅台股票', rate: 12.5, unit: '股', desc: '当年要是买了茅台...' },
+    { name: '腾讯股票', rate: 9.8, unit: '股', desc: '当年要是买了腾讯...' },
+    { name: '黄金', rate: 2.3, unit: '克', desc: '当年要是买了黄金...' },
+    { name: '定期存款', rate: 1.5, unit: '元', desc: '就算老实存银行...' } // Low anchor
+]
+
+// State
 const form = reactive({
-  name: '',
-  amount: '',
-  reason: '先帮你存着，以后给你'
+    name: '',
+    amount: '',
+    reason: REASONS[0]
 })
-const generated = ref(false)
+const showResult = ref(false)
+const posterPath = ref('')
+const canvasWidth = ref(375)
+const canvasHeight = ref(600)
 
-const generateReceipt = () => {
-  if (!form.name || !form.amount) return uni.showToast({ title: '写个名字和金额呗', icon: 'none' })
-  generated.value = true
-  setTimeout(() => { drawReceipt() }, 200)
+// Methods
+const onReasonChange = (e) => {
+    form.reason = REASONS[e.detail.value]
 }
 
-const drawReceipt = () => {
-  const ctx = uni.createCanvasContext('bankCanvas')
-  const width = 300
-  const height = 450
-  
-  // Paper Texture
-  ctx.setFillStyle('#FFFDF5') 
-  ctx.fillRect(0, 0, width, height)
-  
-  // Border (Double Line)
-  ctx.setStrokeStyle('#B71C1C') // Dark Red Border
-  ctx.setLineWidth(3)
-  ctx.strokeRect(15, 15, width-30, height-30)
-  ctx.setLineWidth(1)
-  ctx.strokeRect(22, 22, width-44, height-44)
-  
-  // Header
-  ctx.setFontSize(28)
-  ctx.setFillStyle('#B71C1C')
-  ctx.setTextAlign('center')
-  ctx.font = 'bold 28px serif'
-  ctx.fillText('MOM\'S BANK', width/2, 70)
-  
-  ctx.setFontSize(16)
-  ctx.setFillStyle('#D32F2F')
-  ctx.fillText('妈妈定期存单', width/2, 100)
-  
-  // Divider
-  ctx.setStrokeStyle('#FFC107') // Gold Divider
-  ctx.setLineWidth(2)
-  ctx.setLineDash([5, 5])
-  ctx.beginPath()
-  ctx.moveTo(30, 120)
-  ctx.lineTo(width-30, 120)
-  ctx.stroke()
-  ctx.setLineDash([]) // Reset
-  
-  // Content
-  ctx.setTextAlign('left')
-  const startX = 40
-  let currentY = 160
-  
-  // Name
-  ctx.setFontSize(12)
-  ctx.setFillStyle('#999')
-  ctx.fillText('NAME / 存户', startX, currentY)
-  currentY += 30
-  ctx.setFontSize(24)
-  ctx.setFillStyle('#000')
-  ctx.fillText(form.name, startX, currentY)
-  
-  // Amount
-  currentY += 50
-  ctx.setFontSize(12)
-  ctx.setFillStyle('#999')
-  ctx.fillText('AMOUNT / 金额', startX, currentY)
-  currentY += 35
-  ctx.setFontSize(40)
-  ctx.setFillStyle('#D32F2F')
-  ctx.fillText(`¥ ${form.amount}`, startX, currentY)
-  
-  // Reason
-  currentY += 50
-  ctx.setFontSize(12)
-  ctx.setFillStyle('#999')
-  ctx.fillText('NOTE / 备注', startX, currentY)
-  currentY += 30
-  ctx.setFontSize(16)
-  ctx.setFillStyle('#333')
-  ctx.fillText(form.reason.substring(0, 18), startX, currentY)
-  
-  // Stamp
-  ctx.save()
-  ctx.translate(width - 90, height - 100)
-  ctx.rotate(-20 * Math.PI / 180)
-  
-  // Stamp Ring
-  ctx.beginPath()
-  ctx.arc(0, 0, 45, 0, 2 * Math.PI)
-  ctx.setStrokeStyle('#D32F2F')
-  ctx.setLineWidth(4)
-  ctx.stroke()
-  
-  // Stamp Inner Ring
-  ctx.beginPath()
-  ctx.arc(0, 0, 40, 0, 2 * Math.PI)
-  ctx.setLineWidth(1)
-  ctx.stroke()
-  
-  // Stamp Text
-  ctx.setFontSize(14)
-  ctx.setFillStyle('#D32F2F')
-  ctx.setTextAlign('center')
-  ctx.fillText('OFFICIAL', 0, -10)
-  ctx.fillText('妈妈存管', 0, 10)
-  ctx.setFontSize(10)
-  ctx.fillText(new Date().getFullYear(), 0, 25)
-  
-  ctx.restore()
-  
-  ctx.draw()
+const submitDeposit = () => {
+    if (!form.name) return uni.showToast({ title: '填个名字吧', icon: 'none' })
+    if (!form.amount || parseFloat(form.amount) <= 0) return uni.showToast({ title: '金额不对哦', icon: 'none' })
+
+    showResult.value = true
+    posterPath.value = ''
+    setTimeout(generatePoster, 200)
 }
 
-const saveImage = () => {
-  uni.canvasToTempFilePath({
-    canvasId: 'bankCanvas',
-    success: (res) => {
-      uni.saveImageToPhotosAlbum({
-        filePath: res.tempFilePath,
-        success: () => uni.showToast({ title: '保存成功' }),
-        fail: () => uni.showToast({ title: '权限被拒绝', icon: 'none' })
-      })
+const closeResult = () => showResult.value = false
+
+// Investment Logic
+const getComparisons = (amount) => {
+    // Pick one high performer (Gold/Moutai/Tencent) and always calculate Bank
+    const highPerformers = INVESTMENTS.slice(0, 3)
+    const target = highPerformers[Math.floor(Math.random() * highPerformers.length)]
+
+    const bank = INVESTMENTS[3]
+    const currentVal = Math.floor(amount * target.rate).toLocaleString()
+
+    return {
+        targetName: target.name,
+        targetVal: currentVal,
+        targetMultiplier: target.rate,
+        targetDesc: target.desc
     }
-  })
 }
+
+// Helper: Download File (Supports http/https and cloud://)
+const downloadFile = (url) => new Promise((resolve) => {
+    if (!url) return resolve(null)
+    if (url.startsWith('wxfile://') || url.startsWith('http://tmp/') || url.startsWith('data:')) return resolve(url)
+    if (url.startsWith('cloud://')) {
+        uni.cloud.downloadFile({
+            fileID: url,
+            success: (res) => resolve(res.statusCode === 200 ? res.tempFilePath : null),
+            fail: () => resolve(null)
+        })
+        return
+    }
+    uni.downloadFile({
+        url,
+        success: (res) => resolve(res.statusCode === 200 ? res.tempFilePath : null),
+        fail: () => resolve(null)
+    })
+})
+
+// Canvas Painting
+const generatePoster = async () => {
+    const ctx = uni.createCanvasContext('posterCanvas')
+    const W = canvasWidth.value
+    const H = canvasHeight.value
+    const logoSrc = LOGO_PIC
+
+    // Pre-download assets
+    const logoPath = await downloadFile(logoSrc)
+
+    // 1. Background (Texture)
+    const grad = ctx.createLinearGradient(0, 0, 0, H)
+    grad.addColorStop(0, '#B71C1C')
+    grad.addColorStop(1, '#880E4F')
+    ctx.setFillStyle(grad)
+    ctx.fillRect(0, 0, W, H)
+
+    // 2. Receipt Paper (Top Half)
+    const paperY = 80
+    const paperW = W - 60
+    const paperH = 300
+    const paperX = 30
+
+    ctx.shadowColor = 'rgba(0,0,0,0.3)'
+    ctx.shadowBlur = 10
+    ctx.shadowOffsetY = 5
+    ctx.setFillStyle('#FFFDF5')
+    ctx.fillRect(paperX, paperY, paperW, paperH)
+    ctx.shadowColor = 'transparent' // Reset shadow
+
+    // Receipt Decor - Red Border
+    ctx.setStrokeStyle('#D32F2F')
+    ctx.setLineWidth(4)
+    ctx.strokeRect(paperX + 10, paperY + 10, paperW - 20, paperH - 20)
+
+    // Receipt Content
+    ctx.setFillStyle('#333')
+    ctx.setTextAlign('center')
+
+    // Title
+    ctx.setFontSize(24)
+    ctx.font = 'bold 24px serif'
+    ctx.fillText("MOM'S BANK", W / 2, paperY + 50)
+    ctx.setFontSize(14)
+    ctx.font = 'normal 14px sans-serif'
+    ctx.fillStyle = '#666'
+    ctx.fillText("妈妈定期存单 (永久期)", W / 2, paperY + 74)
+
+    // Divider
+    ctx.setStrokeStyle('#E0E0E0')
+    ctx.setLineWidth(1)
+    ctx.beginPath()
+    ctx.moveTo(paperX + 20, paperY + 90)
+    ctx.lineTo(paperX + paperW - 20, paperY + 90)
+    ctx.stroke()
+
+    // Details
+    ctx.setTextAlign('left')
+    const startX = paperX + 40
+    let cursorY = paperY + 130
+    const labelColor = '#999'
+    const valColor = '#000'
+
+    // Name
+    ctx.setFontSize(12)
+    ctx.fillStyle = labelColor
+    ctx.fillText("CLIENT / 存户", startX, cursorY)
+    ctx.setFontSize(18)
+    ctx.fillStyle = valColor
+    ctx.font = 'bold 18px sans-serif'
+    ctx.fillText(form.name, startX, cursorY + 25)
+
+    // Amount & Date (Row)
+    cursorY += 60
+    ctx.setFontSize(12)
+    ctx.fillStyle = labelColor
+    ctx.font = 'normal 12px sans-serif'
+    ctx.fillText("AMOUNT / 金额 (2010)", startX, cursorY)
+    ctx.setFontSize(32)
+    ctx.fillStyle = '#D32F2F' // Red amount
+    ctx.font = 'bold 32px monospace'
+    ctx.fillText(`¥${form.amount}`, startX, cursorY + 35)
+
+    // Reason
+    cursorY += 70
+    ctx.setFontSize(12)
+    ctx.fillStyle = labelColor
+    ctx.font = 'normal 12px sans-serif'
+    ctx.fillText("REASON / 理由", startX, cursorY)
+
+    // Reason wrap
+    ctx.fillStyle = '#333'
+    ctx.font = 'normal 14px sans-serif'
+    const reason = form.reason
+    if (reason.length > 12) {
+        ctx.fillText(reason.substring(0, 12), startX, cursorY + 20)
+        ctx.fillText(reason.substring(12), startX, cursorY + 38)
+    } else {
+        ctx.fillText(reason, startX, cursorY + 20)
+    }
+
+    // Stamp
+    ctx.save()
+    ctx.translate(paperX + paperW - 70, paperY + paperH - 70)
+    ctx.rotate(-15 * Math.PI / 180)
+    ctx.beginPath()
+    ctx.arc(0, 0, 40, 0, 2 * Math.PI)
+    ctx.setStrokeStyle('rgba(211, 47, 47, 0.6)')
+    ctx.setLineWidth(3)
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.arc(0, 0, 36, 0, 2 * Math.PI)
+    ctx.setLineWidth(1)
+    ctx.stroke()
+    ctx.fillStyle = 'rgba(211, 47, 47, 0.6)'
+    ctx.setTextAlign('center')
+    ctx.font = 'bold 12px sans-serif'
+    ctx.fillText("MOM BANK", 0, -12)
+    ctx.fillText("保管专用", 0, 5)
+    ctx.setFontSize(10)
+    ctx.fillText("2026", 0, 20)
+    ctx.restore()
+
+    // 3. The "Truth" Section (Bottom Dark Area)
+    const truthY = paperY + paperH + 20
+
+    // Witty Quote (Top)
+    const quote = LIE_QUOTES[Math.floor(Math.random() * LIE_QUOTES.length)]
+    const quoteParts = quote.split('\n')
+
+    ctx.fillStyle = '#FFEBEE'
+    ctx.setTextAlign('center')
+    ctx.font = 'bold 16px sans-serif'
+    ctx.fillText(quoteParts[0], W / 2, 40)
+    ctx.fillStyle = '#FFC107' // Highlight reality
+    ctx.fillText(quoteParts[1], W / 2, 64)
+
+    // Investment Result (Bottom)
+    const result = getComparisons(form.amount)
+
+    ctx.fillStyle = 'rgba(0,0,0,0.2)'
+    ctx.fillRect(20, truthY, W - 40, 100) // Dark box
+
+    ctx.textAlign = 'center'
+    ctx.fillStyle = '#FFF'
+    ctx.font = '14px sans-serif'
+    ctx.fillText(result.targetDesc, W / 2, truthY + 30)
+
+    ctx.fillStyle = '#FFD700'
+    ctx.font = 'bold 36px monospace'
+    ctx.fillText(`¥ ${result.targetVal}`, W / 2, truthY + 70)
+
+    // Footer / QR
+    const footerY = H - 90
+    if (logoPath) {
+        const qrSize = 60
+        ctx.drawImage(logoPath, W / 2 - qrSize / 2, footerY, qrSize, qrSize)
+        ctx.fillStyle = 'rgba(255,255,255,0.5)'
+        ctx.setFontSize(10)
+        ctx.fillText("扫码生成你的“童年账单”", W / 2, footerY + qrSize + 15)
+    } else {
+        ctx.fillStyle = 'rgba(255,255,255,0.5)'
+        ctx.setFontSize(10)
+        ctx.fillText("扫码生成你的“童年账单”", W / 2, H - 30)
+    }
+
+    // Draw
+    ctx.draw(false, () => {
+        setTimeout(() => {
+            uni.canvasToTempFilePath({
+                canvasId: 'posterCanvas',
+                destWidth: W * 3,
+                destHeight: H * 3,
+                success: (res) => posterPath.value = res.tempFilePath,
+                fail: (e) => console.log(e)
+            })
+        }, 300)
+    })
+}
+
+const savePoster = () => {
+    if (!posterPath.value) return
+    uni.saveImageToPhotosAlbum({
+        filePath: posterPath.value,
+        success: () => uni.showToast({ title: '保存成功' }),
+        fail: () => uni.showToast({ title: '保存失败', icon: 'none' })
+    })
+}
+
+// Share Logic
+onShareAppMessage(() => {
+    return {
+        title: `妈，当年那笔${form.amount || '压岁'}钱，现在值多少你知道吗？`,
+        path: '/pages/bank/index',
+        imageUrl: posterPath.value || ''
+    }
+})
+
 </script>
 
 <style scoped>
 .container {
-  min-height: 100vh;
-  padding: 40rpx;
-  background-color: #FFF8E1; /* Creamy Beige */
-  position: relative;
-  overflow: hidden;
-  box-sizing: border-box;
+    min-height: 100vh;
+    padding: 30rpx;
+    background-color: #D32F2F;
+    position: relative;
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
-/* Background Coins Pattern */
-.bg-coins {
+.bg-pattern {
     position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background-image: radial-gradient(#FFC107 15%, transparent 15%);
-    background-size: 60rpx 60rpx;
-    opacity: 0.15;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background-image: radial-gradient(rgba(255, 215, 0, 0.1) 10%, transparent 10%);
+    background-size: 40rpx 40rpx;
     pointer-events: none;
 }
 
 /* Header */
-.piggy-header {
+.header {
     text-align: center;
-    margin-top: 40rpx;
-    margin-bottom: 30rpx;
-    position: relative;
-    z-index: 2;
+    margin: 40rpx 0 60rpx;
 }
-.piggy-icon {
-    font-size: 160rpx;
-    filter: drop-shadow(0 10rpx 20rpx rgba(0,0,0,0.2));
-    animation: float 3s ease-in-out infinite;
-}
-.gold-pile {
+
+.logo-text {
+    font-family: serif;
     font-size: 60rpx;
-    margin-top: -40rpx;
-    letter-spacing: -10rpx;
+    font-weight: 900;
+    color: #FFC107;
+    letter-spacing: 4rpx;
+    text-shadow: 0 4rpx 8rpx rgba(0, 0, 0, 0.2);
 }
 
-/* Receipt Card */
-.receipt-container {
-    margin-top: 20rpx;
-    position: relative;
-    z-index: 5;
-    padding-bottom: 120rpx; /* Space for stamp */
+.sub-text {
+    font-size: 24rpx;
+    color: rgba(255, 255, 255, 0.8);
+    margin-top: 10rpx;
+    letter-spacing: 8rpx;
 }
 
-.receipt-paper {
+/* Form Card */
+.card {
     background: #FFFDF5;
-    width: 100%;
-    padding: 60rpx 40rpx 80rpx;
-    box-sizing: border-box;
-    box-shadow: 0 20rpx 60rpx rgba(211, 47, 47, 0.1);
-    position: relative;
-    border-top: 8rpx solid #B71C1C; /* Red Top Border */
+    border-radius: 20rpx;
+    padding: 0;
+    box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.2);
+    overflow: hidden;
 }
 
-/* Jagged Edge using gradient */
-.jagged-edge {
-    position: absolute;
-    bottom: -20rpx;
-    left: 0;
-    width: 100%;
-    height: 20rpx;
-    background: linear-gradient(-45deg, transparent 16rpx, #FFFDF5 0), 
-                linear-gradient(45deg, transparent 16rpx, #FFFDF5 0);
-    background-size: 32rpx 32rpx;
-    background-repeat: repeat-x;
-}
-
-.receipt-header {
+.card-header {
+    background: #FFECB3;
+    padding: 24rpx;
     text-align: center;
+    border-bottom: 2rpx dashed #FFC107;
+}
+
+.card-header .title {
+    color: #8D6E63;
+    font-weight: bold;
+    font-size: 32rpx;
+}
+
+.form-body {
+    padding: 40rpx;
+}
+
+.input-group {
     margin-bottom: 40rpx;
 }
-.receipt-title {
-    font-family: serif;
-    font-size: 48rpx;
-    font-weight: 900;
-    color: #B71C1C;
-    display: block;
-    letter-spacing: 4rpx;
-}
-.receipt-sub {
-    font-size: 24rpx;
-    color: #D32F2F;
-    letter-spacing: 10rpx;
-    margin-top: 10rpx;
-    display: block;
-    opacity: 0.8;
-}
 
-.dotted-line {
-    border-bottom: 4rpx dashed #FFC107;
-    margin: 40rpx 0;
-}
-
-/* Inputs */
-.input-group {
-    margin-bottom: 30rpx;
-}
 .label {
-    font-size: 20rpx;
-    color: #B71C1C;
-    font-weight: bold;
-    margin-bottom: 12rpx;
     display: block;
-    letter-spacing: 1rpx;
+    font-size: 24rpx;
+    color: #888;
+    margin-bottom: 16rpx;
 }
 
-.engraved-box {
-    background: #FFF;
-    border-radius: 12rpx;
-    padding: 10rpx 24rpx;
-    box-shadow: inset 0 2rpx 4rpx rgba(0,0,0,0.05);
-    border: 2rpx solid #FFCDD2;
-}
-
-.input-text {
+.input {
     height: 80rpx;
+    border-bottom: 2rpx solid #E0E0E0;
+    font-size: 32rpx;
+    color: #333;
+}
+
+.amount-wrapper {
+    display: flex;
+    align-items: center;
+    border-bottom: 2rpx solid #E0E0E0;
+}
+
+.currency {
+    font-size: 40rpx;
+    font-weight: bold;
+    color: #333;
+    margin-right: 20rpx;
+}
+
+.amount-input {
+    border: none;
+    font-size: 48rpx;
+    font-weight: bold;
+    height: 90rpx;
+}
+
+.ph-style {
+    color: #CCC;
+    font-weight: normal;
+    font-size: 30rpx;
+}
+
+.date-display {
     font-size: 32rpx;
     color: #333;
     font-weight: bold;
-    font-family: monospace; /* Typewriter feel */
+    padding: 20rpx 0;
+    border-bottom: 2rpx solid #E0E0E0;
 }
 
-.receipt-footer {
-    text-align: center;
-    margin-top: 60rpx;
-}
-.fine-print {
-    font-size: 18rpx;
-    color: #EF9A9A;
-}
-
-/* Stamp Button */
-.stamp-btn-wrapper {
-    position: absolute;
-    bottom: -60rpx;
-    left: 0;
+.picker-box {
+    font-size: 30rpx;
+    color: #333;
+    padding: 20rpx 0;
+    border-bottom: 2rpx solid #E0E0E0;
+    display: flex;
+    justify-content: space-between;
     width: 100%;
-    display: flex;
-    justify-content: center;
-    z-index: 10;
 }
 
-.stamp-btn {
-    width: 180rpx;
-    height: 180rpx;
-    background: #D32F2F;
-    border-radius: 50%;
-    box-shadow: 0 10rpx 30rpx rgba(211, 47, 47, 0.4), inset 0 4rpx 10rpx rgba(255,255,255,0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 8rpx solid #B71C1C;
+.arrow {
+    color: #999;
+    font-size: 24rpx;
 }
 
-.stamp-inner {
-    width: 140rpx;
-    height: 140rpx;
-    border: 4rpx solid rgba(255,255,255,0.4);
-    border-radius: 50%;
+/* Footer */
+.footer {
+    padding: 40rpx;
+    background: #FFF;
+    text-align: center;
+}
+
+.btn-deposit {
+    background: linear-gradient(135deg, #D32F2F, #B71C1C);
+    color: #FFF;
+    border-radius: 50rpx;
+    padding: 20rpx 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 10rpx 20rpx rgba(211, 47, 47, 0.3);
+    border: none;
 }
 
-.stamp-text {
-    color: #fff;
+.btn-main {
     font-size: 36rpx;
-    font-weight: 900;
+    font-weight: bold;
     letter-spacing: 2rpx;
 }
-.stamp-sub {
-    color: rgba(255,255,255,0.8);
+
+.btn-sub {
     font-size: 20rpx;
-    margin-top: 6rpx;
+    opacity: 0.8;
+    margin-top: 4rpx;
 }
 
-/* Preview Area */
-.preview-area {
+.disclaimer {
+    font-size: 20rpx;
+    color: #BBB;
+    margin-top: 24rpx;
+    display: block;
+}
+
+/* Modal */
+.modal-mask {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    width: 600rpx;
+    background: transparent;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding-top: 60rpx;
 }
-.piggy-header-small { font-size: 80rpx; margin-bottom: 20rpx; }
-.canvas-box { border-radius: 4rpx; overflow: hidden; background: #fff; margin-bottom: 60rpx; }
-.bank-canvas { width: 300px; height: 450px; }
 
-.action-row { display: flex; width: 100%; gap: 30rpx; }
-.action-btn { flex: 1; border-radius: 20rpx; height: 100rpx; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 30rpx; box-shadow: 0 8rpx 16rpx rgba(0,0,0,0.1); }
-.btn-save { background: #D32F2F; color: #FFF; }
-.btn-retry { background: #FFF; color: #D32F2F; border: 2rpx solid #D32F2F; }
+.modal-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20rpx;
+}
 
-/* Animation */
-@keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-20rpx); }
+.modal-title {
+    color: #FFF;
+    font-size: 36rpx;
+    font-weight: bold;
+}
+
+.close-btn {
+    color: #FFF;
+    font-size: 40rpx;
+    padding: 10rpx;
+}
+
+.canvas-wrapper {
+    width: 100%;
+    height: 800rpx;
+    background: #FFF;
+    border-radius: 20rpx;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.poster-preview {
+    width: 100%;
+    height: 100%;
+}
+
+.generating {
+    text-align: center;
+    color: #999;
+    font-size: 28rpx;
+}
+
+.loading-spinner {
+    width: 60rpx;
+    height: 60rpx;
+    border: 6rpx solid #EEE;
+    border-top-color: #D32F2F;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20rpx;
+}
+
+.modal-btns {
+    width: 100%;
+    display: flex;
+    gap: 30rpx;
+    margin-top: 40rpx;
+}
+
+.m-btn {
+    flex: 1;
+    border-radius: 50rpx;
+    font-size: 30rpx;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 90rpx;
+}
+
+.btn-save {
+    background: #FFF;
+    color: #333;
+}
+
+.btn-share {
+    background: #FFC107;
+    color: #333;
+}
+
+.offscreen-canvas {
+    position: fixed;
+    left: 9999px;
+}
+
+/* Animations */
+.anim-slide-down {
+    animation: slideDown 0.8s ease-out;
+}
+
+.anim-slide-up {
+    animation: slideUp 0.8s ease-out;
+}
+
+.anim-fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.hover-scale:active {
+    transform: scale(0.98);
 }
 </style>
