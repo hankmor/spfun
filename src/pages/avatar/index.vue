@@ -25,7 +25,7 @@
 
                     <!-- Interactive Preview -->
                     <view class="preview-layer" @click="chooseImage" v-if="!generated">
-                        <image class="user-photo" :src="userAvatar || '/static/logo.jpeg'" mode="aspectFill">
+                        <image class="user-photo" :src="userAvatar || '/static/logo.webp'" mode="aspectFill">
                         </image>
 
                         <view class="photo-placeholder" v-if="!userAvatar">
@@ -106,7 +106,7 @@ const selectFrame = (index) => {
 
 const generateAvatar = async () => {
     // Allow generation with default avatar if user hasn't uploaded one
-    const avatarToUse = userAvatar.value || '/static/logo.jpeg'
+    const avatarToUse = userAvatar.value || '/static/logo.webp'
 
     uni.showLoading({ title: '施法中...' })
     generated.value = true

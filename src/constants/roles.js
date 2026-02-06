@@ -1,0 +1,4 @@
+export const AUNT_MONEY_PIC = "https://636c-cloud1-6g60xvpwf70ce125-1402836808.tcb.qcloud.la/aunt_money.webp?sign=d223ecd105cfb8106b3876a0a8231e77&t=1770383006"
+export const AUNT_MARRIAGE_PIC = "https://636c-cloud1-6g60xvpwf70ce125-1402836808.tcb.qcloud.la/aunt_marriage.webp?sign=a495fba17f89b3376c2328e51d088a64&t=1770383019"
+export const NEIGHBOR_SHOWOFF_PIC = "https://636c-cloud1-6g60xvpwf70ce125-1402836808.tcb.qcloud.la/neighbor_showoff.webp?sign=aa4ba1313584cb9bcd602c9c0e2dcf64&t=1770382973"
+export const UNCLE_STRICT_PIC = "https://636c-cloud1-6g60xvpwf70ce125-1402836808.tcb.qcloud.la/uncle_strict.webp?sign=7fbb1aadb501397a2072f2231da2811f&t=1770382988"
