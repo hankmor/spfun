@@ -60,6 +60,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import { AUNT_MONEY_PIC, AUNT_MARRIAGE_PIC, NEIGHBOR_SHOWOFF_PIC, UNCLE_STRICT_PIC } from '../../constants/roles'
 
 const navTo = (url) => {
   uni.navigateTo({ url })
@@ -71,10 +72,10 @@ const onImgError = (e, index) => {
 }
 
 const roles = [
-    { name: '势利二姨', desc: '工资才三千？', img: '/static/roles/aunt_money.jpeg', fallback: '🀄️', path: '/pages/chat/index?role=aunt_money', theme: 'theme-red' },
-    { name: '催婚大姑', desc: '不结婚不孝！', img: '/static/roles/aunt_marriage.jpeg', fallback: '🤱', path: '/pages/chat/index?role=aunt_marriage', theme: 'theme-coral' },
-    { name: '凡尔赛王姨', desc: 'Lucy去巴黎了', img: '/static/roles/neighbor_showoff.jpeg', fallback: '👜', path: '/pages/chat/index?role=neighbor_showoff', theme: 'theme-red' },
-    { name: '严肃二舅', desc: '要有规划', img: '/static/roles/uncle_strict.jpeg', fallback: '♟️', path: '/pages/chat/index?role=uncle_strict', theme: 'theme-coral' }
+    { name: '势利二姨', desc: '工资才三千？', img: AUNT_MONEY_PIC, fallback: '🀄️', path: '/pages/chat/index?role=aunt_money', theme: 'theme-red' },
+    { name: '催婚大姑', desc: '不结婚不孝！', img: AUNT_MARRIAGE_PIC, fallback: '🤱', path: '/pages/chat/index?role=aunt_marriage', theme: 'theme-coral' },
+    { name: '凡尔赛王姨', desc: 'Lucy去巴黎了', img: NEIGHBOR_SHOWOFF_PIC, fallback: '👜', path: '/pages/chat/index?role=neighbor_showoff', theme: 'theme-red' },
+    { name: '严肃二舅', desc: '要有规划', img: UNCLE_STRICT_PIC, fallback: '♟️', path: '/pages/chat/index?role=uncle_strict', theme: 'theme-coral' }
 ]
 </script>
 

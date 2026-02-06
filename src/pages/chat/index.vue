@@ -111,6 +111,7 @@ placeholder="这谁受的了..."
 <script setup>
 import { ref, nextTick } from 'vue'
 import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
+import { AUNT_MONEY_PIC, AUNT_MARRIAGE_PIC, NEIGHBOR_SHOWOFF_PIC, UNCLE_STRICT_PIC } from '../../constants/roles'
 
 const roleId = ref('')
 const roleAvatar = ref('')
@@ -127,15 +128,15 @@ const shareImagePath = ref('')
 const currentShareText = ref('')
 
 const ROLE_INFO = {
-  'aunt_money': { avatar: '/static/roles/aunt_money.jpeg', name: '势利二姨' },
-  'aunt_marriage': { avatar: '/static/roles/aunt_marriage.jpeg', name: '催婚大姑' },
-  'neighbor_showoff': { avatar: '/static/roles/neighbor_showoff.jpeg', name: '凡尔赛王姨' },
-  'uncle_strict': { avatar: '/static/roles/uncle_strict.jpeg', name: '严肃二舅' }
+  'aunt_money': { avatar: AUNT_MONEY_PIC, name: '势利二姨' },
+  'aunt_marriage': { avatar: AUNT_MARRIAGE_PIC, name: '催婚大姑' },
+  'neighbor_showoff': { avatar: NEIGHBOR_SHOWOFF_PIC, name: '凡尔赛王姨' },
+  'uncle_strict': { avatar: UNCLE_STRICT_PIC, name: '严肃二舅' }
 }
 
 onLoad((options) => {
   roleId.value = options.role || 'aunt_money'
-  const info = ROLE_INFO[roleId.value] || { avatar: '/static/roles/aunt_money.jpeg', name: '神秘亲戚' }
+  const info = ROLE_INFO[roleId.value] || { avatar: AUNT_MONEY_PIC, name: '神秘亲戚' }
   roleAvatar.value = info.avatar
   roleName.value = info.name
   
@@ -228,7 +229,7 @@ const closeModal = () => {
 const drawShareCard = (text) => {
     const w = 300
     const h = 400
-    const avatarSrc = roleAvatar.value || '/static/logo.jpeg'
+    const avatarSrc = roleAvatar.value || AUNT_MONEY_PIC
 
     // 先获取头像真实宽高，避免拉伸
     uni.getImageInfo({
