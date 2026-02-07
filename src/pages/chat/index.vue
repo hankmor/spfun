@@ -374,14 +374,16 @@ const sendMessage = async () => {
             data: { message: text, roleId: roleId.value, userProfile: userProfile.value, history }
         })
 
+        console.log("response: ", res)
+
         if (res.result && res.result.reply) {
-            messages.value.push({ 
-                role: 'ai', 
-                content: res.result.reply, 
+            messages.value.push({
+                role: 'ai',
+                content: res.result.reply,
                 aiScore: res.result.aiScore,
-                userScore: res.result.userScore 
+                userScore: res.result.userScore
             })
-            
+
             // Trigger Hit Effect
             if (res.result.userScore > 0) {
                 // User breaks defense
@@ -593,8 +595,8 @@ const drawSingleCard = async (text) => {
     // Quote Marks
     ctx.font = 'bold 60px serif'
     ctx.fillStyle = 'rgba(211, 47, 47, 0.1)'
-    ctx.fillText('“', 40, boxY + 50)
-    ctx.fillText('”', w - 40, boxY + boxH - 10)
+    ctx.fillText('“', 40, boxY + 60)
+    ctx.fillText('”', w - 40, boxY + boxH + 20)
 
     // Text Handling (Wrap & Truncate)
     ctx.font = 'normal 18px sans-serif'

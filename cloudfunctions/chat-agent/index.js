@@ -128,20 +128,28 @@ exports.main = async (event, context) => {
         // 4. Score Parsing & Response Cleaning
         let replyContent = result.content
         let userScore = 0
+        let aiScore = 100
 
-        // Regex to match (战斗力：85) or (战斗力: 85)
-        const scoreMatch = replyContent.match(/[(（]战斗力[:：]\s*(\d+)[)）]/)
-        if (scoreMatch) {
-            userScore = parseInt(scoreMatch[1], 10)
+        // Regex to match (战斗力：85) or (对方破防：85) etc.
+        const userScoreMatch = replyContent.match(/[（(][^）()]*?(?:战斗力|破防|对线|对方破防)[:：]\s*(\d+)[）)]/)
+        if (userScoreMatch) {
+            userScore = parseInt(userScoreMatch[1], 10)
             // Remove the score tag from reply
-            replyContent = replyContent.replace(scoreMatch[0], '').trim()
+            replyContent = replyContent.replace(userScoreMatch[0], '').trim()
         }
-
-        // 5. AI Lethality Score (Random 60-100)
-        // If user scored high (>80), AI lethality might be lower due to "broken defense"
-        let aiScore = Math.floor(Math.random() * 41) + 60
-        if (userScore > 80) {
-            aiScore = Math.floor(Math.random() * 40) + 20 // Lower lethality if user won
+        
+        // Regex to match (攻击力：95) or (我的攻击力：95) etc.
+        const aiScoreMatch = replyContent.match(/[（(][^）()]*?(?:攻击力|杀伤力|我的攻击力)[:：]\s*(\d+)[）)]/)
+        if (aiScoreMatch) {
+            aiScore = parseInt(aiScoreMatch[1], 10)
+            // Remove the score tag from reply
+            replyContent = replyContent.replace(aiScoreMatch[0], '').trim()
+        } else {
+            // 5. AI Lethality Score fallback (Random)
+            aiScore = Math.floor(Math.random() * 41) + 60
+            if (userScore > 80) {
+                aiScore = Math.floor(Math.random() * 41) + 20
+            }
         }
 
         return {
