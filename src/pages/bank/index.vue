@@ -75,10 +75,10 @@
                 <!-- Watermark / HD Toggle -->
                 <view class="hd-toggle" v-if="posterPath">
                     <view v-if="!isHD" class="unlock-btn" @click="unlockHD">
-                        <text>📺 看视频去水印 (HD)</text>
+                        <text>看视频去水印 (HD)</text>
                     </view>
                     <view v-else class="hd-badge">
-                        <text>✨ 已解锁无水印高清版</text>
+                        <text>已解锁无水印高清版</text>
                     </view>
                 </view>
 
@@ -91,7 +91,7 @@
 
         <!-- Hidden Canvas -->
         <canvas canvas-id="posterCanvas" id="posterCanvas" class="offscreen-canvas"
-            :style="{ width: canvasWidth + 'px', height: canvasHeight + 'px' }"></canvas>
+            :style="{ width: canvasWidth * CANVAS_SCALE + 'px', height: canvasHeight * CANVAS_SCALE + 'px' }"></canvas>
 
     </view>
 
@@ -158,6 +158,7 @@ const showResult = ref(false)
 const posterPath = ref('')
 const canvasWidth = ref(325)
 const canvasHeight = ref(600)
+const CANVAS_SCALE = 2
 
 // Methods
 const showReasonPicker = () => {
@@ -218,9 +219,10 @@ const downloadFile = (url) => new Promise((resolve) => {
 
 // Canvas Painting
 const generatePoster = async () => {
+    const SCALE = CANVAS_SCALE
     const ctx = uni.createCanvasContext('posterCanvas')
-    const W = canvasWidth.value
-    const H = canvasHeight.value
+    const W = canvasWidth.value * SCALE
+    const H = canvasHeight.value * SCALE
     const logoSrc = LOGO_PIC
 
     // Pre-download assets
@@ -234,108 +236,105 @@ const generatePoster = async () => {
     ctx.fillRect(0, 0, W, H)
 
     // 2. Receipt Paper (Top Half)
-    const paperY = 80
-    const paperW = W - 60
-    const paperH = 300
-    const paperX = 30
+    const paperY = 80 * SCALE
+    const paperW = W - 60 * SCALE
+    const paperH = 300 * SCALE
+    const paperX = 30 * SCALE
 
     ctx.shadowColor = 'rgba(0,0,0,0.3)'
-    ctx.shadowBlur = 10
-    ctx.shadowOffsetY = 5
+    ctx.shadowBlur = 10 * SCALE
+    ctx.shadowOffsetY = 5 * SCALE
     ctx.setFillStyle('#FFFDF5')
     ctx.fillRect(paperX, paperY, paperW, paperH)
     ctx.shadowColor = 'transparent' // Reset shadow
 
     // Receipt Decor - Red Border
     ctx.setStrokeStyle('#D32F2F')
-    ctx.setLineWidth(4)
-    ctx.strokeRect(paperX + 10, paperY + 10, paperW - 20, paperH - 20)
+    ctx.setLineWidth(4 * SCALE)
+    ctx.strokeRect(paperX + 10 * SCALE, paperY + 10 * SCALE, paperW - 20 * SCALE, paperH - 20 * SCALE)
 
     // Receipt Content
     ctx.setFillStyle('#333')
     ctx.setTextAlign('center')
 
     // Title
-    ctx.setFontSize(24)
-    ctx.font = 'bold 24px serif'
-    ctx.fillText("MOM'S BANK", W / 2, paperY + 50)
-    ctx.setFontSize(14)
-    ctx.font = 'normal 14px sans-serif'
+    ctx.font = `bold ${24 * SCALE}px serif`
+    ctx.fillText("MOM'S BANK", W / 2, paperY + 50 * SCALE)
+
+    ctx.font = `normal ${14 * SCALE}px sans-serif`
     ctx.fillStyle = '#666'
-    ctx.fillText("妈妈定期存单 (永久期)", W / 2, paperY + 74)
+    ctx.fillText("妈妈定期存单 (永久期)", W / 2, paperY + 74 * SCALE)
 
     // Divider
     ctx.setStrokeStyle('#E0E0E0')
-    ctx.setLineWidth(1)
+    ctx.setLineWidth(1 * SCALE)
     ctx.beginPath()
-    ctx.moveTo(paperX + 20, paperY + 90)
-    ctx.lineTo(paperX + paperW - 20, paperY + 90)
+    ctx.moveTo(paperX + 20 * SCALE, paperY + 90 * SCALE)
+    ctx.lineTo(paperX + paperW - 20 * SCALE, paperY + 90 * SCALE)
     ctx.stroke()
 
     // Details
     ctx.setTextAlign('left')
-    const startX = paperX + 40
-    let cursorY = paperY + 130
+    const startX = paperX + 40 * SCALE
+    let cursorY = paperY + 130 * SCALE
     const labelColor = '#999'
     const valColor = '#000'
 
     // Name
-    ctx.setFontSize(12)
     ctx.fillStyle = labelColor
+    ctx.font = `normal ${12 * SCALE}px sans-serif`
     ctx.fillText("CLIENT / 存户", startX, cursorY)
-    ctx.setFontSize(18)
+
     ctx.fillStyle = valColor
-    ctx.font = 'bold 18px sans-serif'
-    ctx.fillText(form.name, startX, cursorY + 25)
+    ctx.font = `bold ${18 * SCALE}px sans-serif`
+    ctx.fillText(form.name, startX, cursorY + 25 * SCALE)
 
     // Amount & Date (Row)
-    cursorY += 60
-    ctx.setFontSize(12)
+    cursorY += 60 * SCALE
     ctx.fillStyle = labelColor
-    ctx.font = 'normal 12px sans-serif'
+    ctx.font = `normal ${12 * SCALE}px sans-serif`
     ctx.fillText("AMOUNT / 金额 (2010)", startX, cursorY)
-    ctx.setFontSize(32)
+
     ctx.fillStyle = '#D32F2F' // Red amount
-    ctx.font = 'bold 32px monospace'
-    ctx.fillText(`¥${form.amount}`, startX, cursorY + 35)
+    ctx.font = `bold ${32 * SCALE}px monospace`
+    ctx.fillText(`¥${form.amount}`, startX, cursorY + 35 * SCALE)
 
     // Reason
-    cursorY += 70
-    ctx.setFontSize(12)
+    cursorY += 70 * SCALE
     ctx.fillStyle = labelColor
-    ctx.font = 'normal 12px sans-serif'
+    ctx.font = `normal ${12 * SCALE}px sans-serif`
     ctx.fillText("REASON / 理由", startX, cursorY)
 
     // Reason wrap
     ctx.fillStyle = '#333'
-    ctx.font = 'normal 14px sans-serif'
+    ctx.font = `normal ${14 * SCALE}px sans-serif`
     const reason = form.reason
-    ctx.fillText(reason, startX, cursorY + 20)
+    ctx.fillText(reason, startX, cursorY + 20 * SCALE)
 
     // Stamp
     ctx.save()
-    ctx.translate(paperX + paperW - 60, paperY + paperH - 55)
+    ctx.translate(paperX + paperW - 60 * SCALE, paperY + paperH - 55 * SCALE)
     ctx.rotate(-25 * Math.PI / 180)
     ctx.beginPath()
-    ctx.arc(0, 0, 40, 0, 2 * Math.PI)
+    ctx.arc(0, 0, 40 * SCALE, 0, 2 * Math.PI)
     ctx.setStrokeStyle('rgba(211, 47, 47, 0.6)')
-    ctx.setLineWidth(3)
+    ctx.setLineWidth(3 * SCALE)
     ctx.stroke()
     ctx.beginPath()
-    ctx.arc(0, 0, 36, 0, 2 * Math.PI)
-    ctx.setLineWidth(1)
+    ctx.arc(0, 0, 36 * SCALE, 0, 2 * Math.PI)
+    ctx.setLineWidth(1 * SCALE)
     ctx.stroke()
     ctx.fillStyle = 'rgba(211, 47, 47, 0.6)'
     ctx.setTextAlign('center')
-    ctx.font = 'bold 12px sans-serif'
-    ctx.fillText("MOM BANK", 0, -5)
-    ctx.fillText("保管专用", 0, 10)
-    ctx.setFontSize(10)
-    ctx.fillText("2026", 0, 30)
+    ctx.font = `bold ${12 * SCALE}px sans-serif`
+    ctx.fillText("MOM BANK", 0, -5 * SCALE)
+    ctx.fillText("保管专用", 0, 10 * SCALE)
+    ctx.font = `normal ${10 * SCALE}px sans-serif`
+    ctx.fillText("2026", 0, 30 * SCALE)
     ctx.restore()
 
     // 3. The "Truth" Section (Bottom Dark Area)
-    const truthY = paperY + paperH + 20
+    const truthY = paperY + paperH + 20 * SCALE
 
     // Witty Quote (Top)
     const quote = LIE_QUOTES[Math.floor(Math.random() * LIE_QUOTES.length)]
@@ -343,46 +342,46 @@ const generatePoster = async () => {
 
     ctx.fillStyle = '#FFEBEE'
     ctx.setTextAlign('center')
-    ctx.font = 'bold 16px sans-serif'
-    ctx.fillText(quoteParts[0], W / 2, 40)
+    ctx.font = `bold ${16 * SCALE}px sans-serif`
+    ctx.fillText(quoteParts[0], W / 2, 40 * SCALE)
     ctx.fillStyle = '#FFC107' // Highlight reality
-    ctx.fillText(quoteParts[1], W / 2, 64)
+    ctx.fillText(quoteParts[1], W / 2, 64 * SCALE)
 
     // Investment Result (Bottom)
     const result = getComparisons(form.amount)
 
     ctx.fillStyle = 'rgba(0,0,0,0.2)'
-    ctx.fillRect(20, truthY, W - 40, 100) // Dark box
+    ctx.fillRect(20 * SCALE, truthY, W - 40 * SCALE, 100 * SCALE) // Dark box
 
     ctx.textAlign = 'center'
     ctx.fillStyle = '#FFF'
-    ctx.font = '14px sans-serif'
-    ctx.fillText(result.targetDesc, W / 2, truthY + 30)
+    ctx.font = `${14 * SCALE}px sans-serif`
+    ctx.fillText(result.targetDesc, W / 2, truthY + 30 * SCALE)
 
     ctx.fillStyle = '#FFD700'
-    ctx.font = 'bold 36px monospace'
-    ctx.fillText(`¥ ${result.targetVal}`, W / 2, truthY + 70)
+    ctx.font = `bold ${36 * SCALE}px monospace`
+    ctx.fillText(`¥ ${result.targetVal}`, W / 2, truthY + 70 * SCALE)
 
     // Footer / QR
-    const footerY = H - 90
+    const footerY = H - 90 * SCALE
     if (logoPath) {
-        const qrSize = 60
+        const qrSize = 60 * SCALE
         ctx.drawImage(logoPath, W / 2 - qrSize / 2, footerY, qrSize, qrSize)
         ctx.fillStyle = 'rgba(255,255,255,0.5)'
-        ctx.setFontSize(10)
-        ctx.fillText("扫码生成你的“童年账单”", W / 2, footerY + qrSize + 15)
+        ctx.font = `${10 * SCALE}px sans-serif`
+        ctx.fillText("扫码生成你的“童年账单”", W / 2, footerY + qrSize + 15 * SCALE)
     } else {
         ctx.fillStyle = 'rgba(255,255,255,0.5)'
-        ctx.setFontSize(10)
-        ctx.fillText("扫码生成你的“童年账单”", W / 2, H - 30)
+        ctx.font = `${10 * SCALE}px sans-serif`
+        ctx.fillText("扫码生成你的“童年账单”", W / 2, H - 30 * SCALE)
     }
 
     // Watermark Logic
     if (!isHD.value) {
-        ctx.setFontSize(14)
+        ctx.font = `${14 * SCALE}px sans-serif`
         ctx.setFillStyle('rgba(0,0,0,0.3)')
         ctx.setTextAlign('right')
-        ctx.fillText('春节嘴替小程序', canvasWidth.value - 20, canvasHeight.value - 20)
+        ctx.fillText('春节嘴替小程序', W - 20 * SCALE, H - 20 * SCALE)
     }
 
     // Draw
@@ -390,8 +389,8 @@ const generatePoster = async () => {
         setTimeout(() => {
             uni.canvasToTempFilePath({
                 canvasId: 'posterCanvas',
-                destWidth: W * 3,
-                destHeight: H * 3,
+                destWidth: W,
+                destHeight: H,
                 success: (res) => posterPath.value = res.tempFilePath,
                 fail: (e) => console.log(e)
             })
@@ -694,8 +693,8 @@ onShareAppMessage(() => {
 }
 
 .canvas-wrapper {
-    width: 100%;
-    height: 800rpx;
+    width: 76%;
+    height: 845rpx;
     background: #FFF;
     border-radius: 20rpx;
     overflow: hidden;
