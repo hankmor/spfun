@@ -29,7 +29,7 @@
 
                         <!-- Tools (Share/Score) for AI only -->
                         <view v-if="msg.role === 'ai'" class="bubble-footer">
-                            <view v-if="msg.score" class="score-badge">🔥 杀伤力 {{ msg.score }}</view>
+                            <view v-if="msg.aiScore" class="score-badge">🔥 杀伤力 {{ msg.aiScore }}</view>
                             <view class="action-btn" @click="openSingleShare(msg.content)">
                                 <text class="action-icon">📣</text> 挂人
                             </view>
@@ -114,6 +114,15 @@
             </view>
         </view>
     </view>
+
+    <!-- Hit Effect Overlay -->
+    <view class="hit-effect" v-if="showHitEffect">
+        <view class="hit-content anim-hit">
+            <text class="hit-icon">💥</text>
+            <text class="hit-title">亲戚破防了！</text>
+            <text class="hit-score">战斗力 {{ hitScore }}</text>
+        </view>
+    </view>
 </template>
 
 <script setup>
@@ -139,6 +148,10 @@ const currentShareText = ref('')
 // Canvas dimensions
 const canvasWidth = ref(300)
 const canvasHeight = ref(500)
+
+// Hit Effect State
+const showHitEffect = ref(false)
+const hitScore = ref(0)
 
 const ROLE_INFO = {
     'aunt_money': { avatar: AUNT_MONEY_PIC, name: '势利二姨' },
@@ -296,7 +309,19 @@ const sendMessage = async () => {
         })
 
         if (res.result && res.result.reply) {
-            messages.value.push({ role: 'ai', content: res.result.reply, score: res.result.score })
+            messages.value.push({ 
+                role: 'ai', 
+                content: res.result.reply, 
+                aiScore: res.result.aiScore,
+                userScore: res.result.userScore 
+            })
+            
+            // Trigger Hit Effect if userScore > 0 (High Combat Power)
+            if (res.result.userScore > 0) {
+                hitScore.value = res.result.userScore
+                showHitEffect.value = true
+                setTimeout(() => { showHitEffect.value = false }, 2500)
+            }
         }
     } catch (e) {
         messages.value.push({ role: 'ai', content: '（亲戚正在喝水...请稍后再试）' })
@@ -1125,6 +1150,71 @@ onShareAppMessage((res) => {
 .btn-friend {
     background: #D32F2F;
     color: #FFF;
+}
+
+/* Hit Effect */
+.hit-effect {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+.hit-content {
+    background: rgba(0, 0, 0, 0.8);
+    padding: 40rpx 60rpx;
+    border-radius: 30rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 4rpx solid #FFC107;
+    box-shadow: 0 0 50rpx rgba(255, 193, 7, 0.5);
+}
+
+.hit-icon {
+    font-size: 80rpx;
+    margin-bottom: 20rpx;
+}
+
+.hit-title {
+    color: #FFC107;
+    font-size: 40rpx;
+    font-weight: bold;
+    margin-bottom: 10rpx;
+    text-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.5);
+}
+
+.hit-score {
+    color: #FFF;
+    font-size: 32rpx;
+    font-weight: bold;
+}
+
+.anim-hit {
+    animation: hitPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes hitPop {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+
+    60% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 /* Hidden Canvas */
