@@ -26,7 +26,7 @@
                     <text class="label">存入金额 (当年的那笔巨款)</text>
                     <view class="amount-wrapper">
                         <text class="currency">¥</text>
-                        <input class="input amount-input" type="digit" v-model="form.amount" placeholder="1200"
+                        <input class="input amount-input" type="digit" v-model="form.amount" placeholder="输入存入金额"
                             placeholder-class="ph-style" />
                     </view>
                 </view>
@@ -75,7 +75,7 @@
                 <!-- Watermark / HD Toggle -->
                 <view class="hd-toggle" v-if="posterPath">
                     <view v-if="!isHD" class="unlock-btn" @click="unlockHD">
-                        <text>看视频去水印 (HD)</text>
+                        <text>看视频去水印</text>
                     </view>
                     <view v-else class="hd-badge">
                         <text>已解锁无水印高清版</text>
@@ -377,9 +377,11 @@ const generatePoster = async () => {
     }
 
     // Watermark Logic
+    console.log('Generating poster, isHD:', isHD.value)
     if (!isHD.value) {
+        ctx.setFontSize(14 * SCALE)
         ctx.font = `${14 * SCALE}px sans-serif`
-        ctx.setFillStyle('rgba(0,0,0,0.3)')
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)'
         ctx.setTextAlign('right')
         ctx.fillText('春节嘴替小程序', W - 20 * SCALE, H - 20 * SCALE)
     }
@@ -391,25 +393,31 @@ const generatePoster = async () => {
                 canvasId: 'posterCanvas',
                 destWidth: W,
                 destHeight: H,
-                success: (res) => posterPath.value = res.tempFilePath,
-                fail: (e) => console.log(e)
+                success: (res) => {
+                    posterPath.value = res.tempFilePath
+                    console.log('Poster generated:', res.tempFilePath)
+                },
+                fail: (e) => console.error('Canvas export failed:', e)
             })
-        }, 200)
+        }, 250)
     })
 }
 
-const unlockHD = () => {
+const unlockHD = (autoSave = false) => {
     AdManager.showRewardedVideoAd({
         onSuccess: () => {
             isHD.value = true
             uni.showToast({ title: '已解锁高清无水印', icon: 'success' })
             // Redraw
             setTimeout(() => {
-                drawPoster()
+                generatePoster()
+                if (autoSave === true) {
+                    setTimeout(() => saveToAlbum(), 800)
+                }
             }, 100)
         },
         onFail: (err) => {
-            uni.showToast({ title: '解锁失败', icon: 'none' })
+            uni.showToast({ title: '已恢复(带水印)', icon: 'none' })
         }
     })
 }
@@ -427,7 +435,7 @@ const savePoster = async () => {
             cancelText: '直接保存',
             success: (res) => {
                 if (res.confirm) {
-                    unlockHD()
+                    unlockHD(true)
                 } else {
                     saveToAlbum()
                 }
@@ -439,6 +447,9 @@ const savePoster = async () => {
 }
 
 const saveToAlbum = () => {
+    // 尝试展示插屏广告
+    AdManager.showInterstitialAd()
+
     uni.saveImageToPhotosAlbum({
         filePath: posterPath.value,
         success: () => uni.showToast({ title: '保存成功' }),

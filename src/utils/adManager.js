@@ -1,3 +1,4 @@
+import tools from "./tools"
 class AdManager {
     constructor() {
         this.videoAd = null
@@ -119,71 +120,72 @@ class AdManager {
             return
         }
 
-        // #ifdef MP-WEIXIN
-        if (this.videoAd) {
-            // Clear previous listeners to avoid duplicates
-            this.videoAd.offClose()
-            this.videoAd.offError()
+        if (tools.isRelease()) {
+            // #ifdef MP-WEIXIN
+            if (this.videoAd) {
+                console.log("has videoAd: ", this.videoAd)
+                // Clear previous listeners to avoid duplicates
+                this.videoAd.offClose()
+                this.videoAd.offError()
 
-            // Set up new listeners
-            this.videoAd.onClose((res) => {
-                if (res && res.isEnded) {
-                    // Fully watched
-                    console.log('AdManager: Ad watched fully')
-                    if (onSuccess) onSuccess()
-                } else {
-                    // Closed early
-                    console.log('AdManager: Ad closed early')
-                    if (onFail) onFail('视频未播放完成')
-                }
-            })
-
-            this.videoAd.onError((err) => {
-                console.error('AdManager: Show Error', err)
-                // Strategy: If Ad fails to load/show, grant reward anyway (System Compensation)
-                uni.showToast({
-                    title: '福利时间！免广告通过',
-                    icon: 'none'
-                })
-                if (onSuccess) onSuccess()
-            })
-
-            // Show Ad
-            this.videoAd.show().catch(() => {
-                // Reload and try again
-                this.videoAd.load()
-                    .then(() => this.videoAd.show())
-                    .catch(err => {
-                        console.error('AdManager: Load failed', err)
-                        // Strategy: Grant reward on failure
-                        uni.showToast({
-                            title: '加载失败，直接奖励',
-                            icon: 'none'
-                        })
+                // Set up new listeners
+                this.videoAd.onClose((res) => {
+                    if (res && res.isEnded) {
+                        // Fully watched
+                        console.log('AdManager: Ad watched fully')
                         if (onSuccess) onSuccess()
-                    })
-            })
-        } else {
-            // Not supported env or init failed
-            if (onSuccess) onSuccess()
-        }
-        // #endif
+                    } else {
+                        // Closed early
+                        console.log('AdManager: Ad closed early')
+                        if (onFail) onFail('视频未播放完成')
+                    }
+                })
 
-        // #ifndef MP-WEIXIN
-        // Dev environment or H5: Direct success
-        console.log('AdManager: Dev Mode - Mock Ad Success')
-        uni.showModal({
-            title: '开发模式',
-            content: '[模拟] 激励视频播放完成？',
-            success: (res) => {
-                if (res.confirm) {
+                this.videoAd.onError((err) => {
+                    console.error('AdManager: Show Error', err)
+                    // Strategy: If Ad fails to load/show, grant reward anyway (System Compensation)
+                    uni.showToast({
+                        title: '春节送福利，本次免广告！',
+                        icon: 'none'
+                    })
                     if (onSuccess) onSuccess()
-                } else {
-                    if (onFail) onFail('用户取消')
-                }
+                })
+
+                // Show Ad
+                this.videoAd.show().catch(() => {
+                    // Reload and try again
+                    this.videoAd.load()
+                        .then(() => this.videoAd.show())
+                        .catch(err => {
+                            console.error('AdManager: Load failed', err)
+                            // Strategy: Grant reward on failure
+                            uni.showToast({
+                                title: '春节送福利，本次免广告！',
+                                icon: 'none'
+                            })
+                            if (onSuccess) onSuccess()
+                        })
+                })
+            } else {
+                // Not supported env or init failed
+                if (onSuccess) onSuccess()
             }
-        })
-        // #endif
+            // #endif
+        } else {
+            // Dev environment or H5: Direct success
+            console.log('AdManager: Dev Mode - Mock Ad Success')
+            uni.showModal({
+                title: '开发模式',
+                content: '[模拟] 激励视频播放完成？',
+                success: (res) => {
+                    if (res.confirm) {
+                        if (onSuccess) onSuccess()
+                    } else {
+                        if (onFail) onFail('用户取消')
+                    }
+                }
+            })
+        }
     }
 
     /**
@@ -198,15 +200,24 @@ class AdManager {
             return
         }
 
-        // #ifdef MP-WEIXIN
-        if (this.cardAd) {
-            this.cardAd.show().then(() => {
-                this.lastCardAdTime = now
-            }).catch((err) => {
-                console.error('AdManager: Show Interstitial Failed', err)
+        if (tools.isRelease()) {
+            // #ifdef MP-WEIXIN
+            if (this.cardAd) {
+                this.cardAd.show().then(() => {
+                    this.lastCardAdTime = now
+                }).catch((err) => {
+                    console.error('AdManager: Show Interstitial Failed', err)
+                })
+            }
+            // #endif
+        } else {
+            console.log('AdManager: Dev Mode - Mock Interstitial Ad Success')
+            this.lastCardAdTime = now
+            uni.showToast({
+                title: '[模拟] 插屏广告已显示',
+                icon: 'none'
             })
         }
-        // #endif
     }
 }
 

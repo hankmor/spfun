@@ -145,6 +145,20 @@
                         看视频回血 (+{{ energyReward }})
                     </button>
                     <text class="sub-text">每日免费恢复至 {{ maxEnergy }} 点</text>
+                    
+                    <view class="promo-section">
+                        <view class="promo-title">去别处逛逛？</view>
+                        <view class="promo-grid">
+                            <view class="promo-item" @click="navTo('/pages/bank/index')">
+                                <view class="promo-icon">🧧</view>
+                                <text class="promo-text">妈妈存单</text>
+                            </view>
+                            <view class="promo-item" @click="navTo('/pages/avatar/index')">
+                                <view class="promo-icon">🦁</view>
+                                <text class="promo-text">开运头像</text>
+                            </view>
+                        </view>
+                    </view>
                 </view>
             </view>
         </view>
@@ -196,7 +210,7 @@ const initAds = async () => {
     await AdManager.init()
     adEnabled.value = AdManager.config.ad_enabled
     maxEnergy.value = AdManager.config.chat_energy
-    energyReward.value = AdManager.config.chat_num_after_ad
+    energyReward.value = AdManager.config.chat_energy_num_after_ad
     godModePrompt.value = AdManager.config.ai_help_prompt
     
     console.log("adEnabled: ", adEnabled.value)
@@ -244,10 +258,15 @@ const closeEnergyModal = () => {
     showEnergyModalState.value = false
 }
 
+const navTo = (url) => {
+    uni.navigateTo({ url })
+}
+
 const watchAdForEnergy = () => {
     AdManager.showRewardedVideoAd({
         onSuccess: () => {
             energy.value += energyReward.value
+            // maxEnergy.value += energyReward.value
             saveEnergy()
             uni.showToast({ title: `体力 +${energyReward.value}`, icon: 'success' })
             closeEnergyModal()
@@ -662,9 +681,13 @@ const closeChatModal = () => showChatModal.value = false
 
 const saveImage = (path) => {
     if (!path) return
+    
+    // 尝试展示插屏广告（不阻塞保存）
+    AdManager.showInterstitialAd()
+
     uni.saveImageToPhotosAlbum({
         filePath: path,
-        success: () => uni.showToast({ title: '保存成功' }),
+        success: () => uni.showToast({ title: '保存成功', icon: 'success' }),
         fail: () => uni.showToast({ title: '保存失败', icon: 'none' })
     })
 }
@@ -1091,7 +1114,7 @@ onShareAppMessage((res) => {
 .chat-content {
     flex: 1;
     overflow-y: scroll;
-    padding-bottom: 20rpx;
+    /* padding-bottom: 20rpx; */
 }
 
 .padding-top {
@@ -1321,6 +1344,58 @@ onShareAppMessage((res) => {
     transition: width 0.3s ease;
 }
 
+.energy-statu.sub-text {
+    font-size: 20rpx;
+    color: #999;
+    margin-top: 20rpx;
+    display: block;
+}
+
+.promo-section {
+    margin-top: 40rpx;
+    width: 100%;
+    border-top: 1rpx solid #f0f0f0;
+    padding-top: 30rpx;
+}
+
+.promo-title {
+    font-size: 24rpx;
+    color: #666;
+    margin-bottom: 20rpx;
+}
+
+.promo-grid {
+    display: flex;
+    justify-content: space-around;
+    gap: 20rpx;
+}
+
+.promo-item {
+    flex: 1;
+    background: #f8f8f8;
+    padding: 20rpx;
+    border-radius: 20rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: all 0.2s;
+}
+
+.promo-item:active {
+    background: #f0f0f0;
+    transform: scale(0.95);
+}
+
+.promo-icon {
+    font-size: 48rpx;
+    margin-bottom: 10rpx;
+}
+
+.promo-text {
+    font-size: 24rpx;
+    color: #333;
+    font-weight: bold;
+}
 .energy-status-text {
     font-size: 20rpx;
     color: #D32F2F;
@@ -1462,7 +1537,7 @@ onShareAppMessage((res) => {
 /* SOS Button (Primary Red) */
 .sos-btn {
     bottom: 220rpx;
-    background: linear-gradient(135deg, #B71C1C 0%, #D32F2F 100%);
+    background: linear-gradient(135deg, #ee2323 0%, #ba0f0f 100%);
 }
 
 /* God Mode Button (Vibrant Red) */
