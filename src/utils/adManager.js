@@ -37,9 +37,9 @@ class AdManager {
             const db = uni.cloud.database()
             const collection = db.collection('app_config')
             const res = await collection.get()
-
-            if (res.result && res.result.data && res.result.data.length > 0) {
-                const remoteConfig = res.result.data[0]
+            console.log("res: ", res)
+            if (res && res.data && res.data.length > 0) {
+                const remoteConfig = res.data[0]
                 // Merge remote config, prioritizing remote values
                 this.config = { ...this.config, ...remoteConfig }
                 console.log('AdManager: Config loaded', this.config)
@@ -66,7 +66,8 @@ class AdManager {
      */
     _createVideoAd() {
         // #ifdef MP-WEIXIN
-        if (wx.createRewardedVideoAd && this.config.video_ad_id) {
+        console.log('AdManager: Creating Video Ad with ID:', this.config.video_ad_id)
+        if (wx.createRewardedVideoAd && this.config.video_ad_id && this.config.video_ad_id.length > 15) {
             this.videoAd = wx.createRewardedVideoAd({
                 adUnitId: this.config.video_ad_id
             })
@@ -74,6 +75,8 @@ class AdManager {
             this.videoAd.onError((err) => {
                 console.error('AdManager: Video Ad Error', err)
             })
+        } else {
+            console.warn('AdManager: Skip Video Ad creation (Invalid ID or not supported)')
         }
         // #endif
     }
@@ -83,7 +86,8 @@ class AdManager {
    */
     _createInterstitialAd() {
         // #ifdef MP-WEIXIN
-        if (wx.createInterstitialAd && this.config.interstitial_ad_id) {
+        console.log('AdManager: Creating Interstitial Ad with ID:', this.config.interstitial_ad_id)
+        if (wx.createInterstitialAd && this.config.interstitial_ad_id && this.config.interstitial_ad_id.length > 15) {
             this.cardAd = wx.createInterstitialAd({
                 adUnitId: this.config.interstitial_ad_id
             })
@@ -93,6 +97,8 @@ class AdManager {
                 console.error('AdManager: Interstitial Ad Error', err)
             })
             this.cardAd.onClose(() => { })
+        } else {
+            console.warn('AdManager: Skip Interstitial Ad creation (Invalid ID or not supported)')
         }
         // #endif
     }

@@ -186,10 +186,34 @@ const godModePrompt = ref('')
 const initAds = async () => {
     await AdManager.init()
     adEnabled.value = AdManager.config.ad_enabled
-    energy.value = AdManager.config.chat_energy
     maxEnergy.value = AdManager.config.chat_energy
     energyReward.value = AdManager.config.chat_num_after_ad
     godModePrompt.value = AdManager.config.ai_help_prompt
+    
+    console.log("adEnabled: ", adEnabled.value)
+
+    loadEnergy()
+}
+
+const loadEnergy = () => {
+    const today = new Date().toISOString().split('T')[0]
+    const lastDate = uni.getStorageSync('energy_last_date')
+    const storedEnergy = uni.getStorageSync('user_energy')
+
+    if (lastDate !== today) {
+        // New day: Reset energy
+        energy.value = maxEnergy.value
+        saveEnergy()
+    } else {
+        // Same day: Use stored energy or default
+        energy.value = (storedEnergy !== '') ? parseInt(storedEnergy) : maxEnergy.value
+    }
+}
+
+const saveEnergy = () => {
+    const today = new Date().toISOString().split('T')[0]
+    uni.setStorageSync('user_energy', energy.value)
+    uni.setStorageSync('energy_last_date', today)
 }
 
 const checkEnergy = () => {
@@ -215,6 +239,7 @@ const watchAdForEnergy = () => {
     AdManager.showRewardedVideoAd({
         onSuccess: () => {
             energy.value += energyReward.value
+            saveEnergy()
             uni.showToast({ title: `体力 +${energyReward.value}`, icon: 'success' })
             closeEnergyModal()
         },
@@ -539,6 +564,7 @@ const sendMessage = async () => {
 
     // Deduct Energy
     energy.value--
+    saveEnergy()
 
     messages.value.push({ role: 'user', content })
     saveHistory()
@@ -1366,7 +1392,7 @@ onShareAppMessage((res) => {
 .reset-btn {
     bottom: 460rpx;
     /* Adjusted spacing */
-    background: linear-gradient(135deg, #b3b3b3 0%, #9f9f9f 100%);
+    background: linear-gradient(135deg, #dcdcdc 0%, #9f9f9f 100%);
     border-color: rgba(255, 215, 0, 0.5);
     /* Slower gold for reset */
     opacity: 0.9;
@@ -1429,6 +1455,7 @@ onShareAppMessage((res) => {
 
 .modal-header {
     width: 100%;
+    height: 60rpx;
     display: flex;
     justify-content: space-between;
     align-items: center;
