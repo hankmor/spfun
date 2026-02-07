@@ -8,7 +8,6 @@
             <!-- Time/System Message Placeholder (Optional) -->
             <view class="system-msg">
                 <text class="time-tag">{{ formatTime() }}</text>
-                <text class="energy-tag" v-if="adEnabled" @click="showEnergyModal">⚡ 体力: {{ energy }}</text>
             </view>
 
             <view v-for="(msg, index) in messages" :key="index" :id="'msg-' + index" class="msg-row"
@@ -47,10 +46,7 @@
             <view id="bottom-anchor" class="anchor"></view>
         </scroll-view>
 
-        <!-- Reset Button (Floating) -->
-        <view class="reset-btn anim-pop" @click="confirmReset">
-            <text class="reset-text">重开</text>
-        </view>
+        <!-- Reset Button (Floating) - REMOVED -->
 
         <!-- God Mode Button (Floating) -->
         <view class="god-mode-floating-btn anim-pop" @click="useGodMode">
@@ -115,11 +111,24 @@
 
         <!-- Input Area -->
         <view class="input-area glass-panel safe-area-bottom">
+            <!-- Energy Progress Bar -->
+            <view class="energy-status-bar" v-if="adEnabled" @click="showEnergyModal">
+                <view class="energy-progress-bg">
+                    <view class="energy-progress-fill" :style="{ width: (energy / maxEnergy * 100) + '%' }"></view>
+                </view>
+                <text class="energy-status-text">体力值 {{ energy }}/{{ maxEnergy }}</text>
+            </view>
+
             <view class="input-row">
                 <input class="chat-input" confirm-type="send" v-model="inputValue" :placeholder="inputPlaceholder"
                     @confirm="sendMessage" />
                 <button class="send-btn" :class="{ 'btn-disabled': !inputValue.trim() }"
-                    @click="sendMessage">发送</button>
+                    @click="sendMessage">
+                    <text class="btn-icon">↑</text>
+                </button>
+                <button class="reset-icon-btn" @click="confirmReset">
+                    <text class="btn-icon">↻</text>
+                </button>
             </view>
         </view>
 
@@ -1257,6 +1266,42 @@ onShareAppMessage((res) => {
     font-size: 24rpx;
 }
 
+/* Energy Progress Bar */
+.energy-status-bar {
+    width: 95%;
+    margin-bottom: 0rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    padding: 10rpx 0;
+}
+
+.energy-progress-bg {
+    width: 100%;
+    height: 12rpx;
+    background: #FFEBEE;
+    border-radius: 6rpx;
+    overflow: hidden;
+    position: relative;
+    border: 1rpx solid rgba(211, 47, 47, 0.1);
+}
+
+.energy-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #FFCDD2, #D32F2F);
+    border-radius: 6rpx;
+    transition: width 0.3s ease;
+}
+
+.energy-status-text {
+    font-size: 20rpx;
+    color: #D32F2F;
+    margin-top: 6rpx;
+    font-weight: 500;
+    opacity: 0.8;
+}
+
 /* Input Area */
 .input-area {
     position: sticky;
@@ -1264,11 +1309,9 @@ onShareAppMessage((res) => {
     bottom: 0;
     left: 0;
     width: 100%;
-    padding: 20rpx 30rpx;
+    padding: 10rpx 20rpx 45rpx 20rpx;
     /* Adjusted padding */
     padding-bottom: calc(20rpx + constant(safe-area-inset-bottom));
-    /* Safe area */
-    padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
     /* Safe area */
     display: flex;
     flex-direction: column;
@@ -1287,8 +1330,8 @@ onShareAppMessage((res) => {
 .input-row {
     display: flex;
     align-items: center;
-    gap: 20rpx;
-    width: 92%;
+    gap: 16rpx;
+    width: 95%;
 }
 
 .chat-input {
@@ -1301,18 +1344,32 @@ onShareAppMessage((res) => {
     color: #333;
 }
 
-.send-btn {
-    width: 120rpx;
+.send-btn, .reset-icon-btn {
+    width: 80rpx;
     height: 80rpx;
-    background: #D32F2F;
-    color: #FFF;
-    font-size: 30rpx;
-    border-radius: 40rpx;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 500;
+    padding: 0;
+    margin: 0;
     transition: all 0.2s;
+}
+
+.send-btn {
+    background: #D32F2F;
+    color: #FFF;
+}
+
+.reset-icon-btn {
+    background: #f0f0f0;
+    color: #666;
+    border: 1rpx solid #ddd;
+}
+
+.btn-icon {
+    font-size: 40rpx;
+    line-height: 1;
 }
 
 .btn-disabled {
