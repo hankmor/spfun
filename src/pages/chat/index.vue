@@ -48,8 +48,12 @@
 
         <!-- SOS Button (Floating) -->
         <view class="sos-btn" @click="openChatShare">
-            <!-- <text class="sos-icon">📢</text> -->
             <text class="sos-text">求救</text>
+        </view>
+
+        <!-- Reset Button (Floating) -->
+        <view class="reset-btn" @click="confirmReset">
+            <text class="reset-text">重开</text>
         </view>
 
         <!-- Share Modal (Single Message) -->
@@ -261,10 +265,54 @@ onLoad(async (options) => {
     // Resolve Cloud URLs
     await resolveCloudUrls()
 
-    if (messages.value.length === 0) {
-        messages.value.push({ role: 'ai', content: getGreeting(roleId.value) })
-    }
+    // Load History or Init
+    loadHistory()
 })
+
+const getHistoryKey = () => `chat_history_${roleId.value}`
+
+const loadHistory = () => {
+    try {
+        const history = uni.getStorageSync(getHistoryKey())
+        if (history && Array.isArray(history) && history.length > 0) {
+            messages.value = history
+        } else {
+            // New chat
+            messages.value = [{ role: 'ai', content: getGreeting(roleId.value) }]
+            saveHistory()
+        }
+    } catch (e) {
+        messages.value = [{ role: 'ai', content: getGreeting(roleId.value) }]
+    }
+    scrollToBottom()
+}
+
+const saveHistory = () => {
+    try {
+        uni.setStorageSync(getHistoryKey(), messages.value)
+    } catch (e) {
+        console.error('Save storage fail:', e)
+    }
+}
+
+const confirmReset = () => {
+    uni.showModal({
+        title: '重新开始',
+        content: '确定要清除所有聊天记录并重新开始吗？',
+        confirmColor: '#d32f2f',
+        success: (res) => {
+            if (res.confirm) {
+                clearHistory()
+            }
+        }
+    })
+}
+
+const clearHistory = () => {
+    messages.value = [{ role: 'ai', content: getGreeting(roleId.value) }]
+    saveHistory()
+    uni.showToast({ title: '已重新开始', icon: 'none' })
+}
 
 const resolveCloudUrls = async () => {
     const fileList = [AUNT_MONEY_PIC, AUNT_MARRIAGE_PIC, NEIGHBOR_SHOWOFF_PIC, UNCLE_STRICT_PIC, LOGO_PIC]
@@ -363,6 +411,7 @@ const sendMessage = async () => {
     if (!inputContent.value.trim() || loading.value) return
     const text = inputContent.value
     messages.value.push({ role: 'user', content: text })
+    saveHistory()
     inputContent.value = ''
     scrollToBottom()
     loading.value = true
@@ -383,6 +432,7 @@ const sendMessage = async () => {
                 aiScore: res.result.aiScore,
                 userScore: res.result.userScore
             })
+            saveHistory()
 
             // Trigger Hit Effect
             if (res.result.userScore > 0) {
@@ -402,7 +452,8 @@ const sendMessage = async () => {
             }
         }
     } catch (e) {
-        messages.value.push({ role: 'ai', content: '（亲戚正在喝水...请稍后再试）' })
+        console.log("error: ", e)
+        messages.value.push({ role: 'ai', content: '（亲戚正在喝水...）' })
     } finally {
         loading.value = false
         scrollToBottom()
@@ -1094,19 +1145,34 @@ onShareAppMessage((res) => {
 .sos-btn {
     position: fixed;
     right: 30rpx;
-    bottom: 200rpx;
-    background: #FF5252;
-    color: #FFF;
-    width: 100rpx;
-    height: 100rpx;
+    bottom: 220rpx;
+    width: 90rpx;
+    height: 90rpx;
+    background: #d32f2f;
     border-radius: 50%;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 8rpx 16rpx rgba(211, 47, 47, 0.4);
-    z-index: 100;
+    box-shadow: 0 4rpx 12rpx rgba(211, 47, 47, 0.4);
+    z-index: 99;
     border: 4rpx solid #FFF;
+}
+
+.reset-btn {
+    position: fixed;
+    right: 30rpx;
+    bottom: 330rpx;
+    width: 90rpx;
+    height: 90rpx;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.2);
+    z-index: 99;
+    border: 4rpx solid rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
 }
 
 .sos-icon {
@@ -1115,7 +1181,9 @@ onShareAppMessage((res) => {
     color: #FFF;
 }
 
-.sos-text {
+.sos-text,
+.reset-text {
+    color: #FFF;
     font-size: 24rpx;
     font-weight: bold;
 }
