@@ -104,7 +104,7 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { onShareAppMessage, onLoad } from '@dcloudio/uni-app'
-import { LOGO_PIC } from '../../constants/roles'
+import { LOGO_PIC, QR_PIC } from '../../constants/roles'
 import AdManager from '../../utils/adManager'
 
 // Ad State
@@ -223,7 +223,7 @@ const generatePoster = async () => {
     const ctx = uni.createCanvasContext('posterCanvas')
     const W = canvasWidth.value * SCALE
     const H = canvasHeight.value * SCALE
-    const logoSrc = LOGO_PIC
+    const logoSrc = QR_PIC
 
     // Pre-download assets
     const logoPath = await downloadFile(logoSrc)

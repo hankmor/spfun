@@ -3,3 +3,4 @@ export const AUNT_MARRIAGE_PIC = "cloud://cloud1-6g60xvpwf70ce125.636c-cloud1-6g
 export const NEIGHBOR_SHOWOFF_PIC = "cloud://cloud1-6g60xvpwf70ce125.636c-cloud1-6g60xvpwf70ce125-1402836808/wangyi-a.png"
 export const UNCLE_STRICT_PIC = "cloud://cloud1-6g60xvpwf70ce125.636c-cloud1-6g60xvpwf70ce125-1402836808/erjiu-a.png"
 export const LOGO_PIC = "cloud://cloud1-6g60xvpwf70ce125.636c-cloud1-6g60xvpwf70ce125-1402836808/logo.webp"
+export const QR_PIC = "cloud://cloud1-6g60xvpwf70ce125.636c-cloud1-6g60xvpwf70ce125-1402836808/maqr.jpg"

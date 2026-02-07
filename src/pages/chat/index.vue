@@ -122,8 +122,7 @@
             <view class="input-row">
                 <input class="chat-input" confirm-type="send" v-model="inputValue" :placeholder="inputPlaceholder"
                     @confirm="sendMessage" />
-                <button class="send-btn" :class="{ 'btn-disabled': !inputValue.trim() }"
-                    @click="sendMessage">
+                <button class="send-btn" :class="{ 'btn-disabled': !inputValue.trim() }" @click="sendMessage">
                     <text class="btn-icon">↑</text>
                 </button>
                 <button class="reset-icon-btn" @click="confirmReset">
@@ -145,7 +144,7 @@
                         看视频回血 (+{{ energyReward }})
                     </button>
                     <text class="sub-text">每日免费恢复至 {{ maxEnergy }} 点</text>
-                    
+
                     <view class="promo-section">
                         <view class="promo-title">去别处逛逛？</view>
                         <view class="promo-grid">
@@ -184,7 +183,7 @@
 <script setup>
 import { ref, nextTick, computed } from 'vue'
 import { onLoad, onUnload, onShareAppMessage } from '@dcloudio/uni-app'
-import { AUNT_MONEY_PIC, AUNT_MARRIAGE_PIC, NEIGHBOR_SHOWOFF_PIC, UNCLE_STRICT_PIC, LOGO_PIC } from '../../constants/roles'
+import { AUNT_MONEY_PIC, AUNT_MARRIAGE_PIC, NEIGHBOR_SHOWOFF_PIC, UNCLE_STRICT_PIC, LOGO_PIC, QR_PIC } from '../../constants/roles'
 import AdManager from '../../utils/adManager'
 
 const roleId = ref('')
@@ -212,7 +211,7 @@ const initAds = async () => {
     maxEnergy.value = AdManager.config.chat_energy
     energyReward.value = AdManager.config.chat_energy_num_after_ad
     godModePrompt.value = AdManager.config.ai_help_prompt
-    
+
     console.log("adEnabled: ", adEnabled.value)
 
     loadEnergy()
@@ -681,7 +680,7 @@ const closeChatModal = () => showChatModal.value = false
 
 const saveImage = (path) => {
     if (!path) return
-    
+
     // 尝试展示插屏广告（不阻塞保存）
     AdManager.showInterstitialAd()
 
@@ -741,7 +740,7 @@ const drawSingleCard = async (text) => {
     const w = canvasWidth.value * SCALE
     const h = canvasHeight.value * SCALE
     const avatarSrc = roleAvatar.value || AUNT_MONEY_PIC
-    const logoSrc = LOGO_PIC // Use Logo as QR placeholder
+    const logoSrc = QR_PIC // Use Logo as QR placeholder
 
     // Parallel download
     const [avatarPath, logoPath] = await Promise.all([
@@ -917,10 +916,11 @@ const drawChatCard = async () => {
     const w = canvasWidth.value * SCALE
     const h = canvasHeight.value * SCALE
     const msgs = messages.value.slice(-4) // Last 4 messages
+    console.log("last 4 msg: ", msgs)
 
     const userAvatarSrc = userProfile.value?.avatarUrl || '/static/logo.webp'
     const roleAvatarSrc = roleAvatar.value || AUNT_MONEY_PIC
-    const logoSrc = LOGO_PIC
+    const logoSrc = QR_PIC
 
     const [rolePath, userPath, logoPath] = await Promise.all([
         downloadFile(roleAvatarSrc),
@@ -944,26 +944,27 @@ const drawChatCard = async () => {
     ctx.fillStyle = '#FFF'
     ctx.font = `bold ${20 * SCALE}px sans-serif`
     ctx.setTextAlign('center')
-    ctx.fillText('春节大作战现场实录', w / 2, 38 * SCALE)
+    ctx.fillText('春节嘴替现场实录', w / 2, 38 * SCALE)
 
     // 3. Draw Messages
-    let cursorY = headerH + 30 * SCALE
-    const bubbleMaxW = 180 * SCALE
+    let cursorY = headerH + 15 * SCALE // 从 30 减小到 15，给消息腾出顶部空间
+    const bubbleMaxW = 200 * SCALE // 从 180 增加到 200，让气泡宽一些，从而降低高度
     const avatarSize = 35 * SCALE
     // Footer height reservation
-    const footerH = 130 * SCALE
+    const footerH = 115 * SCALE // 从 130 减小到 115，给消息腾出底部空间
     const maxContentY = h - footerH
 
     ctx.font = `${14 * SCALE}px sans-serif`
 
     for (const msg of msgs) {
-        if (cursorY > maxContentY) break // Stop if out of space
+        // 这里的快速判断可以放宽一点，或者直接移除，后面有更精确的 cursorY + bubbleH 判断
+        if (cursorY > maxContentY - 30 * SCALE) break 
 
         const isUser = msg.role === 'user'
         const avatarImg = isUser ? userPath : rolePath
 
-        // Avatar X
-        const ax = isUser ? w - 20 * SCALE - avatarSize : 20 * SCALE
+        // Avatar X - 边距从 20 减小到 10
+        const ax = isUser ? w - 10 * SCALE - avatarSize : 10 * SCALE
 
         // Calculate Text Wrap
         const text = msg.content
@@ -980,7 +981,7 @@ const drawChatCard = async () => {
         }
         if (line) lines.push(line)
 
-        // Limit max lines per bubble to prevent one long message taking over
+        // Limit max lines per bubble
         if (lines.length > 5) {
             lines = lines.slice(0, 5)
             lines[4] = lines[4].substring(0, lines[4].length - 1) + '...'
@@ -1005,32 +1006,28 @@ const drawChatCard = async () => {
         }
         ctx.restore()
 
-        // Bubble Rect
-        const bx = isUser ? (ax - 10 * SCALE - bubbleW) : (ax + avatarSize + 10 * SCALE)
+        // Bubble Rect - 气泡离头像的间距从 10 减小到 8
+        const bx = isUser ? (ax - 8 * SCALE - bubbleW) : (ax + avatarSize + 8 * SCALE)
 
-        // Draw Bubble and Arrow as a single path
+        // Draw Bubble and Arrow
         ctx.beginPath()
         if (isUser) {
             ctx.fillStyle = '#FFCDD2'
-            // Rect
             ctx.rect(bx, cursorY, bubbleW, bubbleH)
-            // Arrow (pointing right)
             ctx.moveTo(bx + bubbleW, cursorY + 10 * SCALE)
-            ctx.lineTo(bx + bubbleW + 8 * SCALE, cursorY + 15 * SCALE)
+            ctx.lineTo(bx + bubbleW + 6 * SCALE, cursorY + 15 * SCALE)
             ctx.lineTo(bx + bubbleW, cursorY + 20 * SCALE)
             ctx.fill()
         } else {
             ctx.fillStyle = '#FFFFFF'
             ctx.setStrokeStyle('#FFF59D')
             ctx.setLineWidth(1 * SCALE)
-            // Path for bubble + arrow
             ctx.moveTo(bx, cursorY)
             ctx.lineTo(bx + bubbleW, cursorY)
             ctx.lineTo(bx + bubbleW, cursorY + bubbleH)
             ctx.lineTo(bx, cursorY + bubbleH)
-            // Arrow part (pointing left)
             ctx.lineTo(bx, cursorY + 20 * SCALE)
-            ctx.lineTo(bx - 8 * SCALE, cursorY + 15 * SCALE)
+            ctx.lineTo(bx - 6 * SCALE, cursorY + 15 * SCALE)
             ctx.lineTo(bx, cursorY + 10 * SCALE)
             ctx.closePath()
             ctx.fill()
@@ -1044,7 +1041,7 @@ const drawChatCard = async () => {
             ctx.fillText(l, bx + 10 * SCALE, cursorY + 20 * SCALE + idx * 20 * SCALE)
         })
 
-        cursorY += bubbleH + 20 * SCALE
+        cursorY += bubbleH + 12 * SCALE // 气泡间距从 20 减小到 12
     }
 
     // 4. Footer & QR
@@ -1396,6 +1393,7 @@ onShareAppMessage((res) => {
     color: #333;
     font-weight: bold;
 }
+
 .energy-status-text {
     font-size: 20rpx;
     color: #D32F2F;
@@ -1446,7 +1444,8 @@ onShareAppMessage((res) => {
     color: #333;
 }
 
-.send-btn, .reset-icon-btn {
+.send-btn,
+.reset-icon-btn {
     width: 80rpx;
     height: 80rpx;
     border-radius: 50%;
