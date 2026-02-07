@@ -140,9 +140,9 @@
                     <view class="close-btn" @click="closeEnergyModal">✕</view>
                 </view>
                 <view class="modal-body">
-                    <text class="energy-desc">和亲戚对线太累了，歇会儿吧！\n或者...</text>
+                    <text class="energy-desc">和亲戚对线太累了，歇会儿吧！或者...</text>
                     <button class="ad-btn" @click="watchAdForEnergy">
-                        📺 看视频回血 (+{{ energyReward }})
+                        看视频回血 (+{{ energyReward }})
                     </button>
                     <text class="sub-text">每日免费恢复至 {{ maxEnergy }} 点</text>
                 </view>
@@ -981,16 +981,34 @@ const drawChatCard = async () => {
         // Bubble Rect
         const bx = isUser ? (ax - 10 - bubbleW) : (ax + avatarSize + 10)
 
+        // Draw Bubble and Arrow as a single path
         ctx.beginPath()
         if (isUser) {
-            ctx.fillStyle = '#FFCDD2' // User Bubble Bg
+            ctx.fillStyle = '#FFCDD2'
+            // Rect
+            ctx.rect(bx, cursorY, bubbleW, bubbleH)
+            // Arrow (pointing right)
+            ctx.moveTo(bx + bubbleW, cursorY + 10)
+            ctx.lineTo(bx + bubbleW + 8, cursorY + 15)
+            ctx.lineTo(bx + bubbleW, cursorY + 20)
+            ctx.fill()
         } else {
-            ctx.fillStyle = '#FFFFFF' // AI Bubble Bg
+            ctx.fillStyle = '#FFFFFF'
             ctx.setStrokeStyle('#FFF59D')
-            ctx.lineWidth = 1
-            ctx.strokeRect(bx, cursorY, bubbleW, bubbleH)
+            ctx.setLineWidth(1)
+            // Path for bubble + arrow
+            ctx.moveTo(bx, cursorY)
+            ctx.lineTo(bx + bubbleW, cursorY)
+            ctx.lineTo(bx + bubbleW, cursorY + bubbleH)
+            ctx.lineTo(bx, cursorY + bubbleH)
+            // Arrow part (pointing left)
+            ctx.lineTo(bx, cursorY + 20)
+            ctx.lineTo(bx - 8, cursorY + 15)
+            ctx.lineTo(bx, cursorY + 10)
+            ctx.closePath()
+            ctx.fill()
+            ctx.stroke()
         }
-        ctx.fillRect(bx, cursorY, bubbleW, bubbleH)
 
         // Text
         ctx.fillStyle = isUser ? '#B71C1C' : '#333'
@@ -1103,7 +1121,8 @@ onShareAppMessage((res) => {
 
 /* Energy Modal */
 .header-energy {
-    background: linear-gradient(135deg, #FF9800, #F57C00);
+    /* background: linear-gradient(135deg, #D32F2F, #D32F2F); */
+    /* color: #FFF!important; */
 }
 
 .energy-desc {
@@ -1115,13 +1134,13 @@ onShareAppMessage((res) => {
 }
 
 .ad-btn {
-    background: #4CAF50;
+    background: #D32F2F;
     color: #FFF;
-    width: 80%;
     border-radius: 50rpx;
     font-size: 32rpx;
     font-weight: bold;
-    margin-bottom: 20rpx;
+    padding: 10rpx 0;
+    margin: 40rpx 20rpx 10rpx 0;
 }
 
 .sub-text {
@@ -1507,7 +1526,9 @@ onShareAppMessage((res) => {
     display: flex;
     flex-direction: column;
     align-items: center;
+    align-content: center;
     box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.3);
+    gap: 20rpx;
 }
 
 .modal-header {
@@ -1525,9 +1546,14 @@ onShareAppMessage((res) => {
     color: #D32F2F;
 }
 
+.modal-body {
+    width: 90%;
+    text-align: center;
+}
+
 .close-btn {
-    font-size: 40rpx;
-    color: #FFFFFF;
+    font-size: 30rpx;
+    color: #666;
     padding: 0 10rpx;
 }
 
