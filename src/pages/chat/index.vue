@@ -8,6 +8,7 @@
             <!-- Time/System Message Placeholder (Optional) -->
             <view class="system-msg">
                 <text class="time-tag">{{ formatTime() }}</text>
+                <text class="energy-tag" v-if="adEnabled" @click="showEnergyModal">⚡ 体力: {{ energy }}</text>
             </view>
 
             <view v-for="(msg, index) in messages" :key="index" :id="'msg-' + index" class="msg-row"
@@ -46,14 +47,19 @@
             <view id="bottom-anchor" class="anchor"></view>
         </scroll-view>
 
-        <!-- SOS Button (Floating) -->
-        <view class="sos-btn" @click="openChatShare">
-            <text class="sos-text">求救</text>
+        <!-- Reset Button (Floating) -->
+        <view class="reset-btn anim-pop" @click="confirmReset">
+            <text class="reset-text">重开</text>
         </view>
 
-        <!-- Reset Button (Floating) -->
-        <view class="reset-btn" @click="confirmReset">
-            <text class="reset-text">重开</text>
+        <!-- God Mode Button (Floating) -->
+        <view class="god-mode-floating-btn anim-pop" @click="useGodMode">
+            <text class="god-text">助力</text>
+        </view>
+
+        <!-- SOS Button (Floating) -->
+        <view class="sos-btn anim-pop" @click="openChatShare">
+            <text class="sos-icon">求救</text>
         </view>
 
         <!-- Share Modal (Single Message) -->
@@ -107,14 +113,30 @@
         <canvas canvas-id="shareCanvas" id="shareCanvas" class="offscreen-canvas"
             :style="{ width: canvasWidth + 'px', height: canvasHeight + 'px' }"></canvas>
 
-        <!-- Bottom Input Area (Simplified) -->
-        <view class="input-panel safe-area-bottom">
-            <view class="panel-top-border"></view>
-            <view class="toolbar">
-                <input class="chat-input" v-model="inputContent" :confirm-hold="true" confirm-type="send"
-                    cursor-spacing="20" @confirm="sendMessage" placeholder="输了什么都别输了气势..." />
+        <!-- Input Area -->
+        <view class="input-area glass-panel safe-area-bottom">
+            <view class="input-row">
+                <input class="chat-input" confirm-type="send" v-model="inputValue" :placeholder="inputPlaceholder"
+                    @confirm="sendMessage" />
+                <button class="send-btn" :class="{ 'btn-disabled': !inputValue.trim() }"
+                    @click="sendMessage">发送</button>
+            </view>
+        </view>
 
-                <view class="send-btn" :class="{ 'btn-disabled': !inputContent.trim() }" @click="sendMessage">发送</view>
+        <!-- Energy Depleted Modal -->
+        <view class="modal-mask" v-if="showEnergyModalState && adEnabled" @click="closeEnergyModal">
+            <view class="modal-content" @click.stop>
+                <view class="modal-header header-energy">
+                    <text class="modal-title">⚡ 体力耗尽</text>
+                    <view class="close-btn" @click="closeEnergyModal">✕</view>
+                </view>
+                <view class="modal-body">
+                    <text class="energy-desc">和亲戚对线太累了，歇会儿吧！\n或者...</text>
+                    <button class="ad-btn" @click="watchAdForEnergy">
+                        📺 看视频回血 (+{{ energyReward }})
+                    </button>
+                    <text class="sub-text">每日免费恢复至 {{ maxEnergy }} 点</text>
+                </view>
             </view>
         </view>
     </view>
@@ -138,17 +160,114 @@
 
 <script setup>
 import { ref, nextTick, computed } from 'vue'
-import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
+import { onLoad, onUnload, onShareAppMessage } from '@dcloudio/uni-app'
 import { AUNT_MONEY_PIC, AUNT_MARRIAGE_PIC, NEIGHBOR_SHOWOFF_PIC, UNCLE_STRICT_PIC, LOGO_PIC } from '../../constants/roles'
+import AdManager from '../../utils/adManager'
 
 const roleId = ref('')
+const roleName = ref('')
 const roleAvatar = ref('')
-const roleName = ref('AI嘴替')
+const roleTheme = ref('') // theme-red, theme-coral
 const messages = ref([])
-const inputContent = ref('')
+const inputValue = ref('')
+const inputPlaceholder = ref('输了什么都别输了气势...')
 const loading = ref(false)
 const scrollTarget = ref('')
 const userProfile = ref(null)
+
+// Ad & Energy Logic
+const energy = ref(15)
+const maxEnergy = ref(15)
+const energyReward = ref(10)
+const showEnergyModalState = ref(false)
+const adEnabled = ref(false)
+const godModePrompt = ref('')
+
+const initAds = async () => {
+    await AdManager.init()
+    adEnabled.value = AdManager.config.ad_enabled
+    energy.value = AdManager.config.chat_energy
+    maxEnergy.value = AdManager.config.chat_energy
+    energyReward.value = AdManager.config.chat_num_after_ad
+    godModePrompt.value = AdManager.config.ai_help_prompt
+}
+
+const checkEnergy = () => {
+    // 如果广告关闭，直接通过（无限体力）
+    if (!AdManager.config.ad_enabled) return true
+
+    if (energy.value <= 0) {
+        showEnergyModalState.value = true
+        return false
+    }
+    return true
+}
+
+const showEnergyModal = () => {
+    showEnergyModalState.value = true
+}
+
+const closeEnergyModal = () => {
+    showEnergyModalState.value = false
+}
+
+const watchAdForEnergy = () => {
+    AdManager.showRewardedVideoAd({
+        onSuccess: () => {
+            energy.value += energyReward.value
+            uni.showToast({ title: `体力 +${energyReward.value}`, icon: 'success' })
+            closeEnergyModal()
+        },
+        onFail: (err) => {
+            uni.showToast({ title: err || '观看失败', icon: 'none' })
+        }
+    })
+}
+
+const fetchGodModeReply = async () => {
+    uni.showLoading({ title: 'AI 思考中...' })
+    try {
+        const history = messages.value.slice(-6) // Context
+        const res = await uni.cloud.callFunction({
+            name: 'chat-agent',
+            data: {
+                action: 'god_mode',
+                prompt: godModePrompt.value,
+                history: history,
+                roleId: roleId.value
+            }
+        })
+        if (res.result && res.result.reply) {
+            inputValue.value = res.result.reply
+        }
+    } catch (e) {
+        console.log("error: ", e)
+        uni.showToast({ title: 'AI 罢工了', icon: 'none' })
+    } finally {
+        uni.hideLoading()
+    }
+}
+
+const useGodMode = () => {
+    // 优先判断全局广告开关
+    if (!AdManager.config.ad_enabled) {
+        fetchGodModeReply()
+        return
+    }
+
+    uni.showModal({
+        title: '🤖 AI 嘴替',
+        content: '看个视频，让 AI 帮你生成一句绝杀金句？',
+        success: (res) => {
+            if (res.confirm) {
+                AdManager.showRewardedVideoAd({
+                    onSuccess: fetchGodModeReply,
+                    onFail: () => { }
+                })
+            }
+        }
+    })
+}
 
 // Share State
 const showSingleModal = ref(false)
@@ -266,6 +385,7 @@ onLoad(async (options) => {
     await resolveCloudUrls()
 
     // Load History or Init
+    initAds()
     loadHistory()
 })
 
@@ -408,19 +528,28 @@ const getGreeting = (id) => {
 }
 
 const sendMessage = async () => {
-    if (!inputContent.value.trim() || loading.value) return
-    const text = inputContent.value
-    messages.value.push({ role: 'user', content: text })
+    if (!inputValue.value.trim()) return
+    if (loading.value) return
+
+    // Check Energy
+    if (!checkEnergy()) return
+
+    const content = inputValue.value
+    inputValue.value = '' // Clear input
+
+    // Deduct Energy
+    energy.value--
+
+    messages.value.push({ role: 'user', content })
     saveHistory()
-    inputContent.value = ''
-    scrollToBottom()
     loading.value = true
+    scrollToBottom()
 
     try {
         const history = messages.value.slice(-6).map(m => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.content }))
         const res = await uni.cloud.callFunction({
             name: 'chat-agent',
-            data: { message: text, roleId: roleId.value, userProfile: userProfile.value, history }
+            data: { message: content, roleId: roleId.value, userProfile: userProfile.value, history }
         })
 
         console.log("response: ", res)
@@ -908,19 +1037,63 @@ onShareAppMessage((res) => {
     height: 20rpx;
 }
 
-/* System Time */
+/* System Msg */
 .system-msg {
     text-align: center;
     margin-bottom: 30rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10rpx;
 }
 
 .time-tag {
-    background: rgba(0, 0, 0, 0.1);
-    color: #999;
     font-size: 24rpx;
-    padding: 4rpx 12rpx;
+    color: #999;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 4rpx 16rpx;
     border-radius: 8rpx;
 }
+
+.energy-tag {
+    font-size: 24rpx;
+    color: #FFF;
+    background: #FF9800;
+    /* Orange */
+    padding: 4rpx 16rpx;
+    border-radius: 20rpx;
+    font-weight: bold;
+    box-shadow: 0 2rpx 6rpx rgba(255, 152, 0, 0.3);
+}
+
+/* Energy Modal */
+.header-energy {
+    background: linear-gradient(135deg, #FF9800, #F57C00);
+}
+
+.energy-desc {
+    font-size: 30rpx;
+    color: #666;
+    text-align: center;
+    margin-bottom: 40rpx;
+    line-height: 1.5;
+}
+
+.ad-btn {
+    background: #4CAF50;
+    color: #FFF;
+    width: 80%;
+    border-radius: 50rpx;
+    font-size: 32rpx;
+    font-weight: bold;
+    margin-bottom: 20rpx;
+}
+
+.sub-text {
+    font-size: 22rpx;
+    color: #AAA;
+}
+
 
 /* Message Rows */
 .msg-row {
@@ -1058,49 +1231,57 @@ onShareAppMessage((res) => {
     font-size: 24rpx;
 }
 
-/* Input Panel */
-.input-panel {
-    background: #FFF8E1;
-    min-height: 110rpx;
-    padding: 0 20rpx;
-    padding-bottom: constant(safe-area-inset-bottom);
-    padding-bottom: env(safe-area-inset-bottom);
+/* Input Area */
+.input-area {
+    position: sticky;
+    /* Changed from fixed to sticky to avoid overlap issues with safe-area-bottom */
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 20rpx 30rpx;
+    /* Adjusted padding */
+    padding-bottom: calc(20rpx + constant(safe-area-inset-bottom));
+    /* Safe area */
+    padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+    /* Safe area */
     display: flex;
     flex-direction: column;
-    border-top: 1rpx solid #FFE082;
+    gap: 16rpx;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    border-top: 1rpx solid rgba(0, 0, 0, 0.05);
+    z-index: 100;
 }
 
-.panel-top-border {
-    display: none;
+.tool-bar {
+    display: flex;
+    justify-content: flex-start;
 }
 
-.toolbar {
+.input-row {
     display: flex;
     align-items: center;
-    height: 110rpx;
-    padding: 0 10rpx;
+    gap: 20rpx;
+    width: 92%;
 }
 
 .chat-input {
     flex: 1;
-    background: #FFFFFF;
-    height: 76rpx;
-    border-radius: 12rpx;
-    margin-right: 20rpx;
-    padding: 0 20rpx;
-    font-size: 32rpx;
-    caret-color: #D32F2F;
-    border: 1rpx solid #FFECB3;
+    height: 80rpx;
+    background: #F5F5F5;
+    border-radius: 40rpx;
+    padding: 0 30rpx;
+    font-size: 30rpx;
+    color: #333;
 }
 
 .send-btn {
-    width: 110rpx;
-    height: 76rpx;
+    width: 120rpx;
+    height: 80rpx;
     background: #D32F2F;
-    /* Red Button */
     color: #FFF;
     font-size: 30rpx;
-    border-radius: 12rpx;
+    border-radius: 40rpx;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1142,50 +1323,83 @@ onShareAppMessage((res) => {
 }
 
 /* SOS Button */
+/* --- Floating Action Buttons (Chinese Red Theme) --- */
+.sos-btn,
+.reset-btn,
+.god-mode-floating-btn {
+    position: fixed;
+    right: 30rpx;
+    width: 96rpx;
+    /* Slightly larger for a premium feel */
+    height: 96rpx;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99;
+    border: 4rpx solid #FFD700;
+    /* Gold Border */
+    box-shadow: 0 6rpx 16rpx rgba(183, 28, 28, 0.4);
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.sos-btn:active,
+.reset-btn:active,
+.god-mode-floating-btn:active {
+    transform: scale(0.9);
+}
+
+/* SOS Button (Primary Red) */
 .sos-btn {
-    position: fixed;
-    right: 30rpx;
     bottom: 220rpx;
-    width: 90rpx;
-    height: 90rpx;
-    background: #d32f2f;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4rpx 12rpx rgba(211, 47, 47, 0.4);
-    z-index: 99;
-    border: 4rpx solid #FFF;
+    background: linear-gradient(135deg, #B71C1C 0%, #D32F2F 100%);
 }
 
+/* God Mode Button (Vibrant Red) */
+.god-mode-floating-btn {
+    bottom: 340rpx;
+    /* Adjusted spacing */
+    background: linear-gradient(135deg, #FF5252 0%, #D32F2F 100%);
+}
+
+/* Reset Button (Darker Red/Brown) */
 .reset-btn {
-    position: fixed;
-    right: 30rpx;
-    bottom: 330rpx;
-    width: 90rpx;
-    height: 90rpx;
-    background: rgba(0, 0, 0, 0.5);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.2);
-    z-index: 99;
-    border: 4rpx solid rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(10px);
-}
-
-.sos-icon {
-    font-size: 32rpx;
-    margin-bottom: 0rpx;
-    color: #FFF;
+    bottom: 460rpx;
+    /* Adjusted spacing */
+    background: linear-gradient(135deg, #b3b3b3 0%, #9f9f9f 100%);
+    border-color: rgba(255, 215, 0, 0.5);
+    /* Slower gold for reset */
+    opacity: 0.9;
 }
 
 .sos-text,
-.reset-text {
+.reset-text,
+.god-text {
     color: #FFF;
-    font-size: 24rpx;
-    font-weight: bold;
+    font-size: 26rpx;
+    /* Slightly larger */
+    font-weight: 900;
+    text-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.3);
+}
+
+/* Icon style for SOS */
+.sos-icon {
+    font-size: 26rpx;
+    color: #FFF;
+    font-weight: 900;
+}
+
+/* Stack Positions Override (Already handled in refined styles above, but ensuring clean-up) */
+.sos-btn {
+    right: 30rpx;
+}
+
+.god-mode-floating-btn {
+    right: 30rpx;
+}
+
+.reset-btn {
+    right: 30rpx;
 }
 
 /* Share Modal Common */
@@ -1229,7 +1443,7 @@ onShareAppMessage((res) => {
 
 .close-btn {
     font-size: 40rpx;
-    color: #999;
+    color: #FFFFFF;
     padding: 0 10rpx;
 }
 

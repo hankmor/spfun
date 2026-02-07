@@ -40,6 +40,25 @@ exports.main = async (event, context) => {
     // 0. Load Dynamic Configuration
     const appConfig = await loadConfig()
 
+    // Handle God Mode (AI Help)
+    if (event.action === 'god_mode') {
+        const { prompt, history, roleId } = event
+        // Construct prompt for God Mode
+        const systemPrompt = `你是一个${ROLES[roleId]?.system ? '春节嘴替角色' : '幽默助手'}。
+请根据以下对话历史，帮用户（晚辈）生成一句绝杀金句，用来回怼长辈。
+要求：${prompt || '幽默、犀利、一针见血，60字以内'}。`
+        
+        const historyText = history.map(m => `${m.role === 'user' ? '用户' : '长辈'}: ${m.content}`).join('\n')
+        const fullPrompt = `[对话历史]\n${historyText}\n\n[任务]\n生成一句回怼：`
+
+        try {
+            const result = await generateReply(systemPrompt, [], fullPrompt)
+            return { reply: result.content }
+        } catch (e) {
+            return { error: 'God Mode Failed', debug: e.message }
+        }
+    }
+
     // 1. Validation
     if (!message || !roleId || !ROLES[roleId]) {
         return { error: 'Invalid parameters: roleId or message missing' }

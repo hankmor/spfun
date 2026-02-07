@@ -53,10 +53,20 @@
             <scroll-view scroll-x class="sticker-scroll" :show-scrollbar="false">
                 <view class="sticker-list">
                     <view class="sticker-item" v-for="(item, index) in frames" :key="index"
-                        :class="{ active: currentFrameIndex === index }" @click="selectFrame(index)">
-                        <view class="sticker-icon-3d">{{ item.icon }}</view>
+                        :class="{ active: currentFrameIndex === index, locked: item.isLocked && !isUnlocked(index) }"
+                        @click="selectFrame(index)">
+                        <view class="sticker-icon-3d">
+                            <text v-if="item.isLocked && !isUnlocked(index)">🔒</text>
+                            <text v-else>{{ item.isLocked ? item.realIcon : item.icon }}</text>
+                        </view>
                         <text class="sticker-name">{{ item.name }}</text>
                         <view class="active-dot" v-if="currentFrameIndex === index"></view>
+                    </view>
+
+                    <!-- Feed Ad Placeholder (Visual Only for now) -->
+                    <view class="sticker-item" v-if="showBannerAd && feedAdId" @click="onFeedAdClick">
+                        <view class="sticker-icon-3d ad-sticker">📢</view>
+                        <text class="sticker-name">推荐</text>
                     </view>
                 </view>
             </scroll-view>
@@ -68,23 +78,51 @@
             </button>
         </view>
     </view>
+
+    <!-- Banner Ad -->
+    <view class="ad-container" v-if="showBannerAd && bannerAdId">
+        <ad :unit-id="bannerAdId" class="banner-ad"></ad>
+    </view>
 </template>
 
 <script setup>
 import { ref, reactive } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
+import AdManager from '../../utils/adManager'
 
 const userAvatar = ref('')
 const generated = ref(false)
 const currentFrameIndex = ref(0)
+const showBannerAd = ref(false)
+const bannerAdId = ref('')
+const feedAdId = ref('')
+const unlockedFrames = ref([]) // Track unlocked frame indices
 
-const frames = [
+// Ad Config
+const FEED_AD_INDEX = 5 // Insert Feed Ad at this position
+
+const frames = ref([
     { name: '暴富', text: '暴富', class: 'theme-gold', icon: '💰', color: '#FFD700' },
     { name: '桃花', text: '脱单', class: 'theme-pink', icon: '🌸', color: '#FF69B4' },
     { name: '上岸', text: '上岸', class: 'theme-green', icon: '🎋', color: '#4CAF50' },
     { name: '锦鲤', text: '好运', class: 'theme-red', icon: '🐠', color: '#F44336' },
-    { name: '平安', text: '平安', class: 'theme-blue', icon: '🍎', color: '#2196F3' }
-]
-const currentFrame = ref(frames[0])
+    { name: '平安', text: '平安', class: 'theme-blue', icon: '🍎', color: '#2196F3' },
+    // Ad Locked Frame
+    {
+        name: '隐藏款', text: '天选', class: 'theme-purple', icon: '🔒', color: '#9C27B0',
+        isLocked: true,
+        realIcon: '👑'
+    }
+])
+const currentFrame = ref(frames.value[0])
+
+onLoad(async () => {
+    await AdManager.init()
+    showBannerAd.value = AdManager.config.ad_enabled
+    bannerAdId.value = AdManager.config.banner_ad_id
+    feedAdId.value = AdManager.config.feed_ad_id
+})
+
 
 const chooseImage = () => {
     uni.chooseImage({
@@ -98,11 +136,52 @@ const chooseImage = () => {
     })
 }
 
+const isUnlocked = (index) => {
+    return unlockedFrames.value.includes(index)
+}
+
 const selectFrame = (index) => {
+    const frame = frames.value[index]
+
+    // Check Lock
+    if (frame.isLocked && !isUnlocked(index)) {
+        // 如果广告关闭，直接解锁并选择
+        if (!AdManager.config.ad_enabled) {
+            unlockedFrames.value.push(index)
+            selectFrame(index)
+            return
+        }
+
+        uni.showModal({
+            title: '解锁隐藏款',
+            content: '观看视频解锁“天选之子”限定挂件？',
+            confirmText: '这个我得要',
+            success: (res) => {
+                if (res.confirm) {
+                    AdManager.showRewardedVideoAd({
+                        onSuccess: () => {
+                            unlockedFrames.value.push(index)
+                            selectFrame(index) // Re-select
+                            uni.showToast({ title: '解锁成功!' })
+                        },
+                        onFail: () => { }
+                    })
+                }
+            }
+        })
+        return
+    }
+
     currentFrameIndex.value = index
-    currentFrame.value = frames[index]
+    currentFrame.value = frame
     generated.value = false
 }
+
+const onFeedAdClick = () => {
+    // Simulate navigation or custom ad logic
+    uni.showToast({ title: '广告位: 只有在真机上才能看到原生模板广告', icon: 'none' })
+}
+
 
 const generateAvatar = async () => {
     // Allow generation with default avatar if user hasn't uploaded one
@@ -144,9 +223,10 @@ const generateAvatar = async () => {
     context.setTextBaseline('middle')
     context.fillText(frame.text, size - 45, size - 45 + 12) // Slightly down
 
-    // Icon (Emoji) - Note: Canvas text baseline for emoji can be tricky
+    // Icon (Emoji)
+    const iconToDraw = (frame.isLocked && isUnlocked(currentFrameIndex.value)) ? frame.realIcon : frame.icon
     context.setFontSize(30)
-    context.fillText(frame.icon, size - 45, size - 45 - 15)
+    context.fillText(iconToDraw, size - 45, size - 45 - 15)
 
     context.draw(false, () => {
         setTimeout(() => {
@@ -176,11 +256,11 @@ const saveToAlbum = () => {
 .container {
     min-height: 100vh;
     background: linear-gradient(180deg, #D32F2F 0%, #FF8F00 100%);
-        /* Red to Orange */
-        display: flex;
-        flex-direction: column;
-        position: relative;
-        overflow: hidden;
+    /* Red to Orange */
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
 }
 
 /* Header */
@@ -221,6 +301,7 @@ const saveToAlbum = () => {
     pointer-events: none;
     z-index: 2;
 }
+
 .lantern {
     font-size: 60rpx;
     animation: swing 3s ease-in-out infinite;
@@ -244,14 +325,14 @@ const saveToAlbum = () => {
     align-items: center;
     position: relative;
     padding-bottom: 200rpx;
-        /* Space for dock */
+    /* Space for dock */
 }
 
 /* Lion Decor */
 .lion-decor {
     position: absolute;
     top: 40rpx;
-        /* Adjust based on frame position */
+    /* Adjust based on frame position */
     right: 80rpx;
     font-size: 100rpx;
     z-index: 20;
@@ -269,7 +350,7 @@ const saveToAlbum = () => {
     box-shadow: 0 20rpx 50rpx rgba(0, 0, 0, 0.4), inset 0 0 0 2rpx rgba(255, 255, 255, 0.2);
     position: relative;
     border: 4rpx solid #FFD700;
-        /* Gold Border */
+    /* Gold Border */
 }
 
 .frame-border {
@@ -281,7 +362,7 @@ const saveToAlbum = () => {
     position: relative;
     background: #FFF;
     border: 8rpx solid #FFD700;
-        /* Gold Inner Border */
+    /* Gold Inner Border */
 }
 
 /* Canvas & Preview */
@@ -290,12 +371,12 @@ const saveToAlbum = () => {
     height: 300px;
     position: absolute;
     top: 0;
-        left: 0;
-        transform: scale(0.5);
-        /* Hide or scale down visually */
+    left: 0;
+    transform: scale(0.5);
+    /* Hide or scale down visually */
     transform-origin: top left;
     opacity: 0;
-        /* Hide from view, logic uses it */
+    /* Hide from view, logic uses it */
     pointer-events: none;
 }
 
@@ -303,10 +384,11 @@ const saveToAlbum = () => {
 
 .preview-layer {
     width: 100%;
-        height: 100%;
+    height: 100%;
     position: relative;
     background: #F0F0F0;
 }
+
 .user-photo {
     width: 100%;
     height: 100%;
@@ -315,9 +397,9 @@ const saveToAlbum = () => {
 .photo-placeholder {
     position: absolute;
     top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
+    left: 0;
+    width: 100%;
+    height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -325,6 +407,7 @@ const saveToAlbum = () => {
     background: rgba(0, 0, 0, 0.05);
     color: #999;
 }
+
 .plus-icon {
     font-size: 60rpx;
     margin-bottom: 20rpx;
@@ -334,11 +417,11 @@ const saveToAlbum = () => {
 .frame-overlay {
     position: absolute;
     top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        border: 10rpx solid currentColor;
-        /* Dynamic color */
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 10rpx solid currentColor;
+    /* Dynamic color */
     box-sizing: border-box;
     border-radius: 20rpx;
     pointer-events: none;
@@ -359,6 +442,7 @@ const saveToAlbum = () => {
     justify-content: center;
     box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.2);
 }
+
 .sticker-icon {
     font-size: 40rpx;
     line-height: 1;
@@ -398,7 +482,7 @@ const saveToAlbum = () => {
     left: 0;
     width: 100%;
     background: #FFF8E1;
-        /* Creamy Beige */
+    /* Creamy Beige */
     border-radius: 40rpx 40rpx 0 0;
     padding: 40rpx 30rpx calc(40rpx + constant(safe-area-inset-bottom));
     box-sizing: border-box;
@@ -450,7 +534,7 @@ const saveToAlbum = () => {
     justify-content: center;
     font-size: 50rpx;
     box-shadow: 0 8rpx 0 rgba(0, 0, 0, 0.1);
-        /* 3D effect */
+    /* 3D effect */
     border: 4rpx solid #B71C1C;
     margin-bottom: 10rpx;
 }
@@ -470,7 +554,7 @@ const saveToAlbum = () => {
 
 .magic-btn {
     background: linear-gradient(135deg, #FFD700 0%, #FFA000 100%);
-        color: #D32F2F;
+    color: #D32F2F;
     border-radius: 60rpx;
     height: 100rpx;
     display: flex;
@@ -481,32 +565,47 @@ const saveToAlbum = () => {
     box-shadow: 0 10rpx 20rpx rgba(255, 160, 0, 0.4), inset 0 2rpx 4rpx rgba(255, 255, 255, 0.5);
     border: 2rpx solid #FFECB3;
     margin-bottom: 40rpx;
-        /* background: linear-gradient(135deg, #FF5252 0%, #D32F2F 100%);
+    /* background: linear-gradient(135deg, #FF5252 0%, #D32F2F 100%);
                     box-shadow: 0 8rpx 16rpx rgba(0,0,0,0.15), inset 0 2rpx 4rpx rgba(255,255,255,0.3);
                     border: 2rpx solid #FFCDD2; */
 }
+
 .magic-icon {
     font-size: 40rpx;
     margin-right: 16rpx;
 }
 
 @keyframes swing {
-0%,
+
+    0%,
     100% {
         transform: rotate(-5deg);
     }
-50% {
-    transform: rotate(5deg);
-}
-}
-@keyframes bounce {
-0%,
-    100% {
-        transform: translateY(0) rotate(15deg);
-    }
 
     50% {
-        transform: translateY(-10rpx) rotate(15deg);
+        transform: rotate(5deg);
     }
+}
+
+/* Ads */
+.ad-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 200;
+    padding-bottom: constant(safe-area-inset-bottom);
+    padding-bottom: env(safe-area-inset-bottom);
+    background: #FFF;
+}
+
+.locked .sticker-icon-3d {
+    background: #E0E0E0;
+    border-color: #9E9E9E;
+}
+
+.ad-sticker {
+    background: #FFF3E0;
+    border-color: #FF9800;
 }
 </style>

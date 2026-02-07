@@ -72,6 +72,16 @@
                     </view>
                 </view>
 
+                <!-- Watermark / HD Toggle -->
+                <view class="hd-toggle" v-if="posterPath">
+                    <view v-if="!isHD" class="unlock-btn" @click="unlockHD">
+                        <text>📺 看视频去水印 (HD)</text>
+                    </view>
+                    <view v-else class="hd-badge">
+                        <text>✨ 已解锁无水印高清版</text>
+                    </view>
+                </view>
+
                 <view class="modal-btns">
                     <button class="m-btn btn-save" @click="savePoster">📥 保存证据</button>
                     <button class="m-btn btn-share" open-type="share">🔥 挂人曝光</button>
@@ -84,12 +94,31 @@
             :style="{ width: canvasWidth + 'px', height: canvasHeight + 'px' }"></canvas>
 
     </view>
+
+    <!-- Banner Ad (Safe Area) -->
+    <view class="ad-container" v-if="showBannerAd && bannerAdId">
+        <ad :unit-id="bannerAdId" class="banner-ad"></ad>
+    </view>
 </template>
 
 <script setup>
 import { ref, reactive } from 'vue'
-import { onShareAppMessage } from '@dcloudio/uni-app'
-import { LOGO_PIC } from '../../constants/roles' // Assume Logo is available
+import { onShareAppMessage, onLoad } from '@dcloudio/uni-app'
+import { LOGO_PIC } from '../../constants/roles'
+import AdManager from '../../utils/adManager'
+
+// Ad State
+const showBannerAd = ref(false)
+const bannerAdId = ref('')
+const isHD = ref(false)
+
+onLoad(() => {
+    AdManager.init().then(() => {
+        showBannerAd.value = AdManager.config.ad_enabled
+        bannerAdId.value = AdManager.config.banner_ad_id
+    })
+})
+
 
 // Constants
 const REASONS = [
@@ -348,6 +377,14 @@ const generatePoster = async () => {
         ctx.fillText("扫码生成你的“童年账单”", W / 2, H - 30)
     }
 
+    // Watermark Logic
+    if (!isHD.value) {
+        ctx.setFontSize(14)
+        ctx.setFillStyle('rgba(0,0,0,0.3)')
+        ctx.setTextAlign('right')
+        ctx.fillText('春节嘴替小程序', canvasWidth.value - 20, canvasHeight.value - 20)
+    }
+
     // Draw
     ctx.draw(false, () => {
         setTimeout(() => {
@@ -358,12 +395,51 @@ const generatePoster = async () => {
                 success: (res) => posterPath.value = res.tempFilePath,
                 fail: (e) => console.log(e)
             })
-        }, 300)
+        }, 200)
     })
 }
 
-const savePoster = () => {
+const unlockHD = () => {
+    AdManager.showRewardedVideoAd({
+        onSuccess: () => {
+            isHD.value = true
+            uni.showToast({ title: '已解锁高清无水印', icon: 'success' })
+            // Redraw
+            setTimeout(() => {
+                drawPoster()
+            }, 100)
+        },
+        onFail: (err) => {
+            uni.showToast({ title: '解锁失败', icon: 'none' })
+        }
+    })
+}
+
+// Save & Share
+const savePoster = async () => {
     if (!posterPath.value) return
+
+    // Check if user wants HD but hasn't unlocked it
+    if (!isHD.value && AdManager.config.ad_enabled) {
+        uni.showModal({
+            title: '保存原图',
+            content: '当前为带水印版本，是否看视频解锁高清无水印原图？',
+            confirmText: '解锁HD',
+            cancelText: '直接保存',
+            success: (res) => {
+                if (res.confirm) {
+                    unlockHD()
+                } else {
+                    saveToAlbum()
+                }
+            }
+        })
+    } else {
+        saveToAlbum()
+    }
+}
+
+const saveToAlbum = () => {
     uni.saveImageToPhotosAlbum({
         filePath: posterPath.value,
         success: () => uni.showToast({ title: '保存成功' }),
@@ -737,5 +813,54 @@ onShareAppMessage(() => {
 
 .hover-scale:active {
     transform: scale(0.98);
+}
+
+/* Ad Styles */
+.ad-container {
+    width: 100%;
+    margin-top: 40rpx;
+    padding-bottom: 40rpx;
+    display: flex;
+    justify-content: center;
+}
+
+.hd-toggle {
+    margin-top: 20rpx;
+    display: flex;
+    justify-content: center;
+}
+
+.unlock-btn {
+    background: #333;
+    color: #FFD700;
+    padding: 10rpx 30rpx;
+    border-radius: 40rpx;
+    font-size: 24rpx;
+    font-weight: bold;
+    box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.3);
+    animation: pulse 2s infinite;
+}
+
+.hd-badge {
+    color: #4CAF50;
+    font-size: 24rpx;
+    font-weight: bold;
+    background: rgba(76, 175, 80, 0.1);
+    padding: 6rpx 20rpx;
+    border-radius: 20rpx;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+
+    100% {
+        transform: scale(1);
+    }
 }
 </style>
