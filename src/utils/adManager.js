@@ -11,7 +11,7 @@ class AdManager {
             banner_ad_id: '',   // Banner 广告 ID
             feed_ad_id: '',     // 原生模板/信息流广告 ID
             chat_energy: 15,    // Daily free energy
-            chat_num_after_ad: 10, // Reward amount
+            chat_energy_num_after_ad: 10, // Reward amount
             ai_help_prompt: '请根据当前对话生成一句幽默、犀利且符合长辈人设的回复，60字以内。',
             card_ad_cooldown: 300 // 5 minutes in seconds
         }

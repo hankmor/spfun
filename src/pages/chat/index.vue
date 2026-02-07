@@ -107,7 +107,7 @@
         <!-- Hidden Canvas -->
         <!-- Use a large fixed size for canvas to ensure quality, we scale down in CSS if needed -->
         <canvas canvas-id="shareCanvas" id="shareCanvas" class="offscreen-canvas"
-            :style="{ width: canvasWidth + 'px', height: canvasHeight + 'px' }"></canvas>
+            :style="{ width: (canvasWidth * CANVAS_SCALE) + 'px', height: (canvasHeight * CANVAS_SCALE) + 'px' }"></canvas>
 
         <!-- Input Area -->
         <view class="input-area glass-panel safe-area-bottom">
@@ -310,6 +310,7 @@ const singleSharePath = ref('')
 const chatSharePath = ref('')
 const currentShareText = ref('')
 // Canvas dimensions
+const CANVAS_SCALE = 2
 const canvasWidth = ref(300)
 const canvasHeight = ref(500)
 
@@ -713,8 +714,9 @@ const downloadFile = (url) => new Promise((resolve) => {
 
 // Draw Single Message Card (Focus on Quote)
 const drawSingleCard = async (text) => {
-    const w = canvasWidth.value
-    const h = canvasHeight.value
+    const SCALE = CANVAS_SCALE
+    const w = canvasWidth.value * SCALE
+    const h = canvasHeight.value * SCALE
     const avatarSrc = roleAvatar.value || AUNT_MONEY_PIC
     const logoSrc = LOGO_PIC // Use Logo as QR placeholder
 
@@ -736,31 +738,31 @@ const drawSingleCard = async (text) => {
     // Pattern (Subtle Fu)
     ctx.setGlobalAlpha(0.05)
     ctx.setFillStyle('#FFD700')
-    ctx.font = '20px serif'
-    for (let i = 0; i < w; i += 60) {
-        for (let j = 0; j < h; j += 60) {
-            if ((i + j) % 120 === 0) ctx.fillText('福', i, j)
+    ctx.font = (20 * SCALE) + 'px serif'
+    for (let i = 0; i < w; i += 60 * SCALE) {
+        for (let j = 0; j < h; j += 60 * SCALE) {
+            if ((i / (60 * SCALE) + j / (60 * SCALE)) % 2 === 0) ctx.fillText('福', i, j)
         }
     }
     ctx.setGlobalAlpha(1.0)
 
     // 2. Title
     const title = getRandomTitle('single')
-    ctx.setFontSize(16)
+    ctx.setFontSize(16 * SCALE)
     ctx.setFillStyle('#FFEBEE')
     ctx.setTextAlign('center')
-    ctx.fillText(title, w / 2, 40)
+    ctx.fillText(title, w / 2, 40 * SCALE)
 
     // 3. Avatar (Circle with border)
-    const avatarY = 90
-    const avatarR = 40
+    const avatarY = 90 * SCALE
+    const avatarR = 40 * SCALE
 
     // Glow behind avatar
     ctx.save()
-    ctx.shadowBlur = 20
+    ctx.shadowBlur = 20 * SCALE
     ctx.shadowColor = 'rgba(255, 215, 0, 0.5)'
     ctx.beginPath()
-    ctx.arc(w / 2, avatarY, avatarR + 2, 0, 2 * Math.PI)
+    ctx.arc(w / 2, avatarY, avatarR + 2 * SCALE, 0, 2 * Math.PI)
     ctx.fillStyle = '#FFC107'
     ctx.fill()
     ctx.shadowBlur = 0
@@ -781,46 +783,47 @@ const drawSingleCard = async (text) => {
     }
 
     // 4. Role Name
-    ctx.setFontSize(18)
+    ctx.setFontSize(18 * SCALE)
     ctx.setFillStyle('#FFFFFF')
     ctx.setTextAlign('center')
-    ctx.font = 'bold 18px sans-serif'
-    ctx.fillText(roleName.value, w / 2, avatarY + 60)
+    ctx.font = `bold ${18 * SCALE}px sans-serif`
+    ctx.fillText(roleName.value, w / 2, avatarY + 60 * SCALE)
 
     // 5. Quote Box
-    const boxY = avatarY + 80
-    const boxW = w - 40
-    const boxH = h - boxY - 140 // Reserve space for footer/QR
+    const boxY = avatarY + 80 * SCALE
+    const boxW = w - 40 * SCALE
+    const boxH = h - boxY - 140 * SCALE // Reserve space for footer/QR
 
     ctx.fillStyle = '#FFF8E1'
     ctx.beginPath()
     // Rounded corners
-    const r = 10
-    ctx.moveTo(20 + r, boxY)
-    ctx.lineTo(20 + boxW - r, boxY)
-    ctx.arcTo(20 + boxW, boxY, 20 + boxW, boxY + r, r)
-    ctx.lineTo(20 + boxW, boxY + boxH - r)
-    ctx.arcTo(20 + boxW, boxY + boxH, 20 + boxW - r, boxY + boxH, r)
-    ctx.lineTo(20 + r, boxY + boxH)
-    ctx.arcTo(20, boxY + boxH, 20, boxY + boxH - r, r)
-    ctx.lineTo(20, boxY + r)
-    ctx.arcTo(20, boxY, 20 + r, boxY, r)
+    const r = 10 * SCALE
+    const bx_left = 20 * SCALE
+    ctx.moveTo(bx_left + r, boxY)
+    ctx.lineTo(bx_left + boxW - r, boxY)
+    ctx.arcTo(bx_left + boxW, boxY, bx_left + boxW, boxY + r, r)
+    ctx.lineTo(bx_left + boxW, boxY + boxH - r)
+    ctx.arcTo(bx_left + boxW, boxY + boxH, bx_left + boxW - r, boxY + boxH, r)
+    ctx.lineTo(bx_left + r, boxY + boxH)
+    ctx.arcTo(bx_left, boxY + boxH, bx_left, boxY + boxH - r, r)
+    ctx.lineTo(bx_left, boxY + r)
+    ctx.arcTo(bx_left, boxY, bx_left + r, boxY, r)
     ctx.fill()
 
     // Quote Marks
-    ctx.font = 'bold 60px serif'
+    ctx.font = `bold ${60 * SCALE}px serif`
     ctx.fillStyle = 'rgba(211, 47, 47, 0.1)'
-    ctx.fillText('“', 40, boxY + 60)
-    ctx.fillText('”', w - 40, boxY + boxH + 20)
+    ctx.fillText('“', 40 * SCALE, boxY + 60 * SCALE)
+    ctx.fillText('”', w - 40 * SCALE, boxY + boxH + 20 * SCALE)
 
     // Text Handling (Wrap & Truncate)
-    ctx.font = 'normal 18px sans-serif'
+    ctx.font = `normal ${18 * SCALE}px sans-serif`
     ctx.fillStyle = '#333'
     ctx.setTextAlign('left')
-    const textX = 40
-    const maxWidth = boxW - 40
-    const lineHeight = 26
-    const maxLines = Math.floor((boxH - 40) / lineHeight)
+    const textX = 40 * SCALE
+    const maxWidth = boxW - 40 * SCALE
+    const lineHeight = 26 * SCALE
+    const maxLines = Math.floor((boxH - 40 * SCALE) / lineHeight)
 
     let wrapTextLines = []
     let currentLine = ''
@@ -841,7 +844,7 @@ const drawSingleCard = async (text) => {
 
     // Vertical center text
     const textBlockH = wrapTextLines.length * lineHeight
-    let textY = boxY + (boxH - textBlockH) / 2 + 20
+    let textY = boxY + (boxH - textBlockH) / 2 + 20 * SCALE
 
     wrapTextLines.forEach((l) => {
         ctx.fillText(l, textX, textY)
@@ -849,16 +852,14 @@ const drawSingleCard = async (text) => {
     })
 
     // 6. Footer & QR Code
-    const footerY = h - 110
-
     // QR Code (Logo)
-    const qrSize = 80
+    const qrSize = 80 * SCALE
     const qrX = w / 2 - qrSize / 2
-    const qrY = h - 95
+    const qrY = h - 95 * SCALE
 
     // Draw QR Background
     ctx.fillStyle = '#FFF'
-    ctx.fillRect(qrX - 5, qrY - 5, qrSize + 10, qrSize + 10)
+    ctx.fillRect(qrX - 5 * SCALE, qrY - 5 * SCALE, qrSize + 10 * SCALE, qrSize + 10 * SCALE)
 
     if (logoPath) {
         ctx.drawImage(logoPath, qrX, qrY, qrSize, qrSize)
@@ -866,20 +867,22 @@ const drawSingleCard = async (text) => {
         ctx.fillStyle = '#EEE'
         ctx.fillRect(qrX, qrY, qrSize, qrSize)
         ctx.fillStyle = '#999'
-        ctx.font = '10px sans-serif'
+        ctx.font = `${10 * SCALE}px sans-serif`
         ctx.setTextAlign('center')
         ctx.fillText('Logo', w / 2, qrY + qrSize / 2)
     }
 
-    ctx.font = 'bold 14px sans-serif'
+    ctx.font = `bold ${14 * SCALE}px sans-serif`
     ctx.fillStyle = '#FFC107'
     ctx.setTextAlign('center')
     const guideText = HELP_GUIDES[Math.floor(Math.random() * HELP_GUIDES.length)]
-    ctx.fillText(guideText, w / 2, h - 105)
+    ctx.fillText(guideText, w / 2, h - 105 * SCALE)
 
     ctx.draw(false, () => {
         uni.canvasToTempFilePath({
             canvasId: 'shareCanvas',
+            destWidth: w,
+            destHeight: h,
             success: (res) => singleSharePath.value = res.tempFilePath
         })
     })
@@ -887,8 +890,9 @@ const drawSingleCard = async (text) => {
 
 // Draw Chat History Card (Focus on Battle)
 const drawChatCard = async () => {
-    const w = canvasWidth.value
-    const h = canvasHeight.value
+    const SCALE = CANVAS_SCALE
+    const w = canvasWidth.value * SCALE
+    const h = canvasHeight.value * SCALE
     const msgs = messages.value.slice(-4) // Last 4 messages
 
     const userAvatarSrc = userProfile.value?.avatarUrl || '/static/logo.webp'
@@ -909,25 +913,25 @@ const drawChatCard = async () => {
 
     // 2. Header
     // Simple festive header
-    const headerH = 60
+    const headerH = 60 * SCALE
     ctx.fillStyle = '#D32F2F'
     ctx.fillRect(0, 0, w, headerH)
 
     // Title
     ctx.fillStyle = '#FFF'
-    ctx.font = 'bold 20px sans-serif'
+    ctx.font = `bold ${20 * SCALE}px sans-serif`
     ctx.setTextAlign('center')
-    ctx.fillText('春节大作战现场实录', w / 2, 38)
+    ctx.fillText('春节大作战现场实录', w / 2, 38 * SCALE)
 
     // 3. Draw Messages
-    let cursorY = headerH + 30
-    const bubbleMaxW = 180
-    const avatarSize = 35
+    let cursorY = headerH + 30 * SCALE
+    const bubbleMaxW = 180 * SCALE
+    const avatarSize = 35 * SCALE
     // Footer height reservation
-    const footerH = 130
+    const footerH = 130 * SCALE
     const maxContentY = h - footerH
 
-    ctx.font = '14px sans-serif'
+    ctx.font = `${14 * SCALE}px sans-serif`
 
     for (const msg of msgs) {
         if (cursorY > maxContentY) break // Stop if out of space
@@ -936,13 +940,13 @@ const drawChatCard = async () => {
         const avatarImg = isUser ? userPath : rolePath
 
         // Avatar X
-        const ax = isUser ? w - 20 - avatarSize : 20
+        const ax = isUser ? w - 20 * SCALE - avatarSize : 20 * SCALE
 
         // Calculate Text Wrap
         const text = msg.content
         let lines = []
         let line = ''
-        const maxTextW = bubbleMaxW - 20 // Padding
+        const maxTextW = bubbleMaxW - 20 * SCALE // Padding
 
         for (let i = 0; i < text.length; i++) {
             if (ctx.measureText(line + text[i]).width > maxTextW) {
@@ -959,8 +963,8 @@ const drawChatCard = async () => {
             lines[4] = lines[4].substring(0, lines[4].length - 1) + '...'
         }
 
-        const bubbleH = Math.max(lines.length * 20 + 16, 40)
-        const bubbleW = lines.length > 1 ? bubbleMaxW : (ctx.measureText(lines[0]).width + 30)
+        const bubbleH = Math.max(lines.length * 20 * SCALE + 16 * SCALE, 40 * SCALE)
+        const bubbleW = lines.length > 1 ? bubbleMaxW : (ctx.measureText(lines[0]).width + 30 * SCALE)
 
         // Check vertical space for this message
         if (cursorY + bubbleH > maxContentY) break
@@ -979,7 +983,7 @@ const drawChatCard = async () => {
         ctx.restore()
 
         // Bubble Rect
-        const bx = isUser ? (ax - 10 - bubbleW) : (ax + avatarSize + 10)
+        const bx = isUser ? (ax - 10 * SCALE - bubbleW) : (ax + avatarSize + 10 * SCALE)
 
         // Draw Bubble and Arrow as a single path
         ctx.beginPath()
@@ -988,23 +992,23 @@ const drawChatCard = async () => {
             // Rect
             ctx.rect(bx, cursorY, bubbleW, bubbleH)
             // Arrow (pointing right)
-            ctx.moveTo(bx + bubbleW, cursorY + 10)
-            ctx.lineTo(bx + bubbleW + 8, cursorY + 15)
-            ctx.lineTo(bx + bubbleW, cursorY + 20)
+            ctx.moveTo(bx + bubbleW, cursorY + 10 * SCALE)
+            ctx.lineTo(bx + bubbleW + 8 * SCALE, cursorY + 15 * SCALE)
+            ctx.lineTo(bx + bubbleW, cursorY + 20 * SCALE)
             ctx.fill()
         } else {
             ctx.fillStyle = '#FFFFFF'
             ctx.setStrokeStyle('#FFF59D')
-            ctx.setLineWidth(1)
+            ctx.setLineWidth(1 * SCALE)
             // Path for bubble + arrow
             ctx.moveTo(bx, cursorY)
             ctx.lineTo(bx + bubbleW, cursorY)
             ctx.lineTo(bx + bubbleW, cursorY + bubbleH)
             ctx.lineTo(bx, cursorY + bubbleH)
             // Arrow part (pointing left)
-            ctx.lineTo(bx, cursorY + 20)
-            ctx.lineTo(bx - 8, cursorY + 15)
-            ctx.lineTo(bx, cursorY + 10)
+            ctx.lineTo(bx, cursorY + 20 * SCALE)
+            ctx.lineTo(bx - 8 * SCALE, cursorY + 15 * SCALE)
+            ctx.lineTo(bx, cursorY + 10 * SCALE)
             ctx.closePath()
             ctx.fill()
             ctx.stroke()
@@ -1014,23 +1018,23 @@ const drawChatCard = async () => {
         ctx.fillStyle = isUser ? '#B71C1C' : '#333'
         ctx.setTextAlign('left')
         lines.forEach((l, idx) => {
-            ctx.fillText(l, bx + 10, cursorY + 20 + idx * 20)
+            ctx.fillText(l, bx + 10 * SCALE, cursorY + 20 * SCALE + idx * 20 * SCALE)
         })
 
-        cursorY += bubbleH + 20
+        cursorY += bubbleH + 20 * SCALE
     }
 
     // 4. Footer & QR
-    const qrSize = 80
-    const qrY = h - 95
+    const qrSize = 80 * SCALE
+    const qrY = h - 95 * SCALE
     const qrX = w / 2 - qrSize / 2
 
     // Urgency Text
     const urgencyTitle = getRandomTitle('chat')
     ctx.fillStyle = '#D32F2F' // Red text for urgency on light bg
-    ctx.font = 'bold 16px sans-serif'
+    ctx.font = `bold ${16 * SCALE}px sans-serif`
     ctx.setTextAlign('center')
-    ctx.fillText(urgencyTitle, w / 2, h - 110)
+    ctx.fillText(urgencyTitle, w / 2, h - 110 * SCALE)
 
     // QR Code (Logo)
     if (logoPath) {
@@ -1042,13 +1046,17 @@ const drawChatCard = async () => {
     }
 
     ctx.fillStyle = '#999'
-    ctx.font = '12px sans-serif'
+    ctx.font = `${12 * SCALE}px sans-serif`
     // ctx.fillText('扫码加入战场 · 帮帮孩子', w / 2, h - 10) // Below QR
 
     ctx.draw(false, () => {
         uni.canvasToTempFilePath({
             canvasId: 'shareCanvas',
-            success: (res) => chatSharePath.value = res.tempFilePath
+            destWidth: w,
+            destHeight: h,
+            success: (res) => {
+                chatSharePath.value = res.tempFilePath
+            }
         })
     })
 }
