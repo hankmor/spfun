@@ -115,7 +115,7 @@
 
         <!-- Input Area -->
         <view class="input-area glass-panel safe-area-bottom"
-            :style="{ transform: `translateY(${-keyboardHeight}px)` }">
+            :style="{ bottom: keyboardHeight + 'px' }">
             <!-- Energy Progress Bar -->
             <view class="energy-status-bar" v-if="adEnabled" @click="showEnergyModal">
                 <view class="energy-progress-bg">
@@ -127,7 +127,7 @@
             <view class="input-row">
                 <input class="chat-input" confirm-type="send" v-model="inputValue" :placeholder="inputPlaceholder"
                     :adjust-position="false" @keyboardheightchange="onKeyboardHeightChange"
-                    @confirm="sendMessage" />
+                    @confirm="sendMessage" @blur="onKeyboardBlur" />
                 <button class="send-btn" :class="{ 'btn-disabled': !inputValue.trim() }" @click="sendMessage">
                     <text class="btn-icon">↑</text>
                 </button>
@@ -210,6 +210,10 @@ const onKeyboardHeightChange = (e) => {
     if (keyboardHeight.value > 0) {
         scrollToBottom()
     }
+}
+
+const onKeyboardBlur = () => {
+    keyboardHeight.value = 0
 }
 
 // Ad & Energy Logic
@@ -597,6 +601,10 @@ const getGreeting = (id) => {
 const sendMessage = async () => {
     if (!inputValue.value.trim()) return
     if (loading.value) return
+
+    // 强行收起键盘，确保在发送后 UI 能立即触发回缩逻辑
+    uni.hideKeyboard()
+    keyboardHeight.value = 0
 
     // Check Energy
     if (!checkEnergy()) return
@@ -1144,7 +1152,7 @@ onShareAppMessage((res) => {
     height: 180rpx;
     padding-bottom: env(safe-area-inset-bottom);
     box-sizing: content-box;
-    transition: height 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+    /* transition: height 0.2s cubic-bezier(0.25, 0.1, 0.25, 1); */
 }
 
 .padding-top {
@@ -1456,7 +1464,7 @@ onShareAppMessage((res) => {
     border-top: 1rpx solid rgba(0, 0, 0, 0.05);
     z-index: 100;
     box-sizing: border-box;
-    transition: transform 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+    /* transition: transform 0.2s cubic-bezier(0.25, 0.1, 0.25, 1); */
 }
 
 .tool-bar {
@@ -1561,7 +1569,7 @@ onShareAppMessage((res) => {
     border: 4rpx solid #FFD700;
     /* Gold Border */
     box-shadow: 0 6rpx 16rpx rgba(183, 28, 28, 0.4);
-    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+    /* transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.2s cubic-bezier(0.25, 0.1, 0.25, 1); */
 }
 
 .sos-btn:active,
