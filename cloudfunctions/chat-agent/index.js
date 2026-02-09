@@ -4,7 +4,6 @@ const { generateReply } = require('./lib/ai-service')
 const { loadConfig } = require('./lib/config-loader')
 const { checkDailyLimit } = require('./lib/rate-limit')
 const ROLES = require('./prompts/roles')
-const config = require('./config')
 
 cloud.init({
     env: cloud.DYNAMIC_CURRENT_ENV

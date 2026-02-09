@@ -8,7 +8,8 @@ module.exports = {
         apiKey: process.env.DEEPSEEK_API_KEY || '',
         apiUrl: process.env.DEEPSEEK_API_URL || 'https://api.deepseek.com/v1/chat/completions',
         model: 'deepseek-chat',
-        temperature: 1.3
+        temperature: 1.3,
+        timeout: parseInt(process.env.AI_TIMEOUT) || 20000 // Default 20s
     },
     defaults: {
         minScore: 60,

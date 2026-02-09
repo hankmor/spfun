@@ -51,13 +51,13 @@
         <!-- Reset Button (Floating) - REMOVED -->
 
         <!-- God Mode Button (Floating) -->
-        <view class="god-mode-floating-btn anim-pop" @click="useGodMode"
+        <view class="god-mode-floating-btn anim-pop" @click.stop="useGodMode"
             :style="{ transform: `translateY(${-keyboardHeight}px)` }">
             <text class="god-text">助力</text>
         </view>
 
         <!-- SOS Button (Floating) -->
-        <view class="sos-btn anim-pop" @click="openChatShare"
+        <view class="sos-btn anim-pop" @click.stop="openChatShare"
             :style="{ transform: `translateY(${-keyboardHeight}px)` }">
             <text class="sos-icon">求救</text>
         </view>
@@ -673,6 +673,11 @@ const onCopy = (content) => {
 // --- Share Logic ---
 
 const openSingleShare = (text) => {
+    if (loading.value) {
+        console.log('Share blocked: AI is loading')
+        return
+    }
+    console.log('openSingleShare triggered')
     currentShareText.value = text
     showSingleModal.value = true
     singleSharePath.value = ''
@@ -682,6 +687,11 @@ const openSingleShare = (text) => {
 }
 
 const openChatShare = () => {
+    if (loading.value) {
+        console.log('Share blocked: AI is loading (SOS)')
+        return
+    }
+    console.log('openChatShare (SOS) triggered')
     showChatModal.value = true
     chatSharePath.value = ''
     canvasWidth.value = 300

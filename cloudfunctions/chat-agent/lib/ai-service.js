@@ -1,5 +1,5 @@
 const axios = require('axios')
-const config = require('../config')
+const config = require('../ai-settings')
 
 /**
  * Call DeepSeek AI Service
@@ -41,7 +41,7 @@ async function generateReply(systemPrompt, historyMessages, userMessage) {
                 'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json'
             },
-            timeout: 15000 
+            timeout: config.deepseek.timeout || 20000
         })
 
         return {
