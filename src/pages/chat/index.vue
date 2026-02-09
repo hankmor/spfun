@@ -43,18 +43,22 @@
                 <view class="loading-spinner"></view>
             </view>
 
+            <!-- Bottom Spacer to prevent overlap with input area -->
+            <view class="bottom-spacer" :style="{ marginBottom: keyboardHeight + 'px' }"></view>
             <view id="bottom-anchor" class="anchor"></view>
         </scroll-view>
 
         <!-- Reset Button (Floating) - REMOVED -->
 
         <!-- God Mode Button (Floating) -->
-        <view class="god-mode-floating-btn anim-pop" @click="useGodMode">
+        <view class="god-mode-floating-btn anim-pop" @click="useGodMode"
+            :style="{ transform: `translateY(${-keyboardHeight}px)` }">
             <text class="god-text">助力</text>
         </view>
 
         <!-- SOS Button (Floating) -->
-        <view class="sos-btn anim-pop" @click="openChatShare">
+        <view class="sos-btn anim-pop" @click="openChatShare"
+            :style="{ transform: `translateY(${-keyboardHeight}px)` }">
             <text class="sos-icon">求救</text>
         </view>
 
@@ -110,7 +114,8 @@
             :style="{ width: (canvasWidth * CANVAS_SCALE) + 'px', height: (canvasHeight * CANVAS_SCALE) + 'px' }"></canvas>
 
         <!-- Input Area -->
-        <view class="input-area glass-panel safe-area-bottom">
+        <view class="input-area glass-panel safe-area-bottom"
+            :style="{ transform: `translateY(${-keyboardHeight}px)` }">
             <!-- Energy Progress Bar -->
             <view class="energy-status-bar" v-if="adEnabled" @click="showEnergyModal">
                 <view class="energy-progress-bg">
@@ -121,6 +126,7 @@
 
             <view class="input-row">
                 <input class="chat-input" confirm-type="send" v-model="inputValue" :placeholder="inputPlaceholder"
+                    :adjust-position="false" @keyboardheightchange="onKeyboardHeightChange"
                     @confirm="sendMessage" />
                 <button class="send-btn" :class="{ 'btn-disabled': !inputValue.trim() }" @click="sendMessage">
                     <text class="btn-icon">↑</text>
@@ -196,6 +202,15 @@ const inputPlaceholder = ref('输了什么都别输了气势...')
 const loading = ref(false)
 const scrollTarget = ref('')
 const userProfile = ref(null)
+
+// Keyboard Logic
+const keyboardHeight = ref(0)
+const onKeyboardHeightChange = (e) => {
+    keyboardHeight.value = e.detail.height || 0
+    if (keyboardHeight.value > 0) {
+        scrollToBottom()
+    }
+}
 
 // Ad & Energy Logic
 const energy = ref(15)
@@ -1114,6 +1129,15 @@ onShareAppMessage((res) => {
     /* padding-bottom: 20rpx; */
 }
 
+.bottom-spacer {
+    width: 100%;
+    /* Base height should cover the input area (approx 180rpx) plus safe area */
+    height: 180rpx;
+    padding-bottom: env(safe-area-inset-bottom);
+    box-sizing: content-box;
+    transition: height 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
 .padding-top {
     height: 20rpx;
 }
@@ -1315,7 +1339,7 @@ onShareAppMessage((res) => {
 
 /* Energy Progress Bar */
 .energy-status-bar {
-    width: 95%;
+    width: 100%;
     margin-bottom: 0rpx;
     display: flex;
     flex-direction: column;
@@ -1404,15 +1428,17 @@ onShareAppMessage((res) => {
 
 /* Input Area */
 .input-area {
-    position: sticky;
-    /* Changed from fixed to sticky to avoid overlap issues with safe-area-bottom */
+    position: fixed;
+    /* Use fixed to ensure it stays at the bottom above other content */
     bottom: 0;
     left: 0;
     width: 100%;
-    padding: 10rpx 20rpx 45rpx 20rpx;
-    /* Adjusted padding */
-    padding-bottom: calc(20rpx + constant(safe-area-inset-bottom));
-    /* Safe area */
+    padding: 20rpx 20rpx;
+    /* Base padding */
+    padding-bottom: calc(0rpx + constant(safe-area-inset-bottom));
+    /* iOS 11.0 fallback */
+    padding-bottom: calc(0rpx + env(safe-area-inset-bottom));
+    /* iOS 11.2+ */
     display: flex;
     flex-direction: column;
     gap: 16rpx;
@@ -1420,6 +1446,8 @@ onShareAppMessage((res) => {
     backdrop-filter: blur(10px);
     border-top: 1rpx solid rgba(0, 0, 0, 0.05);
     z-index: 100;
+    box-sizing: border-box;
+    transition: transform 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 .tool-bar {
@@ -1431,7 +1459,7 @@ onShareAppMessage((res) => {
     display: flex;
     align-items: center;
     gap: 16rpx;
-    width: 95%;
+    width: 100%;
 }
 
 .chat-input {
@@ -1524,7 +1552,7 @@ onShareAppMessage((res) => {
     border: 4rpx solid #FFD700;
     /* Gold Border */
     box-shadow: 0 6rpx 16rpx rgba(183, 28, 28, 0.4);
-    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 .sos-btn:active,
@@ -1535,13 +1563,13 @@ onShareAppMessage((res) => {
 
 /* SOS Button (Primary Red) */
 .sos-btn {
-    bottom: 220rpx;
+    bottom: 260rpx;
     background: linear-gradient(135deg, #ee2323 0%, #ba0f0f 100%);
 }
 
 /* God Mode Button (Vibrant Red) */
 .god-mode-floating-btn {
-    bottom: 340rpx;
+    bottom: 380rpx;
     /* Adjusted spacing */
     background: linear-gradient(135deg, #FF5252 0%, #D32F2F 100%);
 }
