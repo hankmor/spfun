@@ -112,8 +112,8 @@ import AdManager from '../../utils/adManager'
 
 // Canvas Constant
 // Canvas Constant
-// Since we use 1000px canvas for 500rpx (250px approx) container, scale is 4
-const CANVAS_SCALE = 4
+// Logical size 750x750 (standard HD), UI container is 250px (approx 500rpx)
+const CANVAS_SCALE = 3
 
 // State
 const userAvatar = ref('')
@@ -407,10 +407,17 @@ const generateAvatar = async () => {
         downloadFile(selectedLayers.tag?.url)
     ])
 
+    // Get asset info for ratio preservation
+    const [userInfo, stickerInfo, tagInfo] = await Promise.all([
+        userImg ? getImageInfo(userImg) : Promise.resolve(null),
+        stickerImg ? getImageInfo(stickerImg) : Promise.resolve(null),
+        tagImg ? getImageInfo(tagImg) : Promise.resolve(null)
+    ])
+
     const ctx = uni.createCanvasContext('avatarCanvas')
-    // target resolution is 1000x1000 for high quality
-    const W = 1000
-    const H = 1000
+    // Standardize to 750x750 for logical drawing
+    const W = 750
+    const H = 750
 
     // Clear
     ctx.clearRect(0, 0, W, H)
@@ -430,11 +437,25 @@ const generateAvatar = async () => {
     // Canvas Scale Factor: CANVAS_SCALE = 2
     // Visual coordinates need to be mapped to Canvas: transform * 2
 
-    // Original centered rect
-    const baseW = photoSize
-    const baseH = photoSize
-    const baseX = offset
-    const baseY = offset
+    // Original base size calculation (Simulating mode="aspectFill")
+    let baseW = photoSize
+    let baseH = photoSize
+    
+    if (userInfo) {
+        const ratio = userInfo.width / userInfo.height
+        if (ratio > 1) {
+            // Wide image
+            baseW = photoSize * ratio
+            baseH = photoSize
+        } else {
+            // Tall or square image
+            baseW = photoSize
+            baseH = photoSize / ratio
+        }
+    }
+
+    const baseX = (W - baseW) / 2
+    const baseY = (H - baseH) / 2
 
     // Apply user transform
     // Note: translate is relative to center if scale origin is center
@@ -472,12 +493,12 @@ const generateAvatar = async () => {
 
     // 5. Sticker Layer
     if (stickerImg && selectedLayers.sticker) {
-        drawAssetAtPosition(ctx, stickerImg, selectedLayers.sticker.position, W, H)
+        drawAssetAtPosition(ctx, stickerImg, stickerInfo, selectedLayers.sticker.position, W, H)
     }
 
     // 6. Tag Layer
     if (tagImg && selectedLayers.tag) {
-        drawAssetAtPosition(ctx, tagImg, selectedLayers.tag.position, W, H)
+        drawAssetAtPosition(ctx, tagImg, tagInfo, selectedLayers.tag.position, W, H)
     }
 
     // Draw
@@ -489,37 +510,54 @@ const generateAvatar = async () => {
     })
 }
 
-const drawAssetAtPosition = (ctx, img, pos, W, H) => {
-    // Define sizes (relative to canvas)
-    const iconSize = 100 * CANVAS_SCALE // Sticker default size
-    const tagW = 160 * CANVAS_SCALE     // Tag default width
-    const tagH = 60 * CANVAS_SCALE
-    const p = 10 * CANVAS_SCALE
+const getImageInfo = (src) => new Promise((resolve) => {
+    uni.getImageInfo({
+        src,
+        success: (res) => resolve(res),
+        fail: () => resolve(null)
+    })
+})
+
+const drawAssetAtPosition = (ctx, img, info, pos, W, H) => {
+    // UI is 500rpx, Canvas is 750px. Conversion: 1rpx = 1.5px
+    const rpxToPx = 1.5
+    
+    // Base styles from CSS (applying extra 0.8 scale to make it look tighter)
+    const stickerW = 160 * rpxToPx * 0.8 // 128rpx -> 192px
+    const tagW = 200 * rpxToPx * 0.8     // 160rpx -> 240px
+    const p10 = 10 * rpxToPx       // 15px
+    const p20 = 20 * rpxToPx       // 30px
 
     let x = 0, y = 0, w = 0, h = 0
 
-    // Logic based on position type (sticker vs tag)
+    // Determine target size while maintaining ratio
+    if (pos === 'bottom-center') {
+        w = tagW
+        h = info ? (w * (info.height / info.width)) : (60 * CANVAS_SCALE)
+    } else if (pos === 'center') {
+        w = W * 0.5 // 50%
+        h = info ? (w * (info.height / info.width)) : w
+    } else {
+        w = stickerW
+        h = info ? (w * (info.height / info.width)) : w
+    }
+
+    // Logic based on position classes in CSS
     switch (pos) {
         case 'bottom-right':
-            w = iconSize; h = iconSize;
-            x = W - w - p; y = H - h - p;
+            x = W - w - p10; y = H - h - p10;
             break;
         case 'bottom-left':
-            w = iconSize; h = iconSize;
-            x = p; y = H - h - p;
+            x = p10; y = H - h - p10;
             break;
         case 'top-right':
-            w = iconSize; h = iconSize;
-            x = W - w - p; y = p;
+            x = W - w - p10; y = p10;
             break;
         case 'bottom-center':
-            // Usually for tags
-            w = tagW; h = tagH;
-            x = (W - w) / 2; y = H - h - p * 2;
+            x = (W - w) / 2; y = H - h - p20;
             break;
         case 'center':
         default:
-            w = iconSize; h = iconSize;
             x = (W - w) / 2; y = (H - h) / 2;
     }
 
@@ -527,18 +565,17 @@ const drawAssetAtPosition = (ctx, img, pos, W, H) => {
 }
 
 const saveToAlbum = () => {
-    // Determine export size based on Canvas actual drawing size
-    const exportSize = 1000
+    // We drew on 750x750 logical space
+    const logicalSize = 750
+    // Target 1000x1000 for actual saved image
+    const destSize = 1000
 
     uni.canvasToTempFilePath({
         canvasId: 'avatarCanvas',
-        // IMPORTANT: width/height define the CROP rectangle on the source canvas.
-        // Since we drew on a 600x600 coordinate system (W, H), we must capture 600x600.
-        // If we use 300, it only captures the top-left quarter!
-        width: exportSize,
-        height: exportSize,
-        destWidth: exportSize,
-        destHeight: exportSize,
+        width: logicalSize,
+        height: logicalSize,
+        destWidth: destSize,
+        destHeight: destSize,
         success: (res) => {
             uni.saveImageToPhotosAlbum({
                 filePath: res.tempFilePath,
@@ -666,12 +703,12 @@ const saveToAlbum = () => {
 
 /* Canvas & Preview */
 .avatar-canvas {
-    width: 1000px;
-    height: 1000px;
+    width: 750px;
+    height: 750px;
     position: absolute;
     top: 0;
     left: 0;
-    transform: scale(0.25);
+    transform: scale(0.3333333);
     transform-origin: top left;
     opacity: 0;
     pointer-events: none;
@@ -770,13 +807,13 @@ const saveToAlbum = () => {
 .pos-br {
     bottom: 10rpx;
     right: 10rpx;
-    width: 160rpx;
+    width: 128rpx;
 }
 
 .pos-bl {
     bottom: 10rpx;
     left: 10rpx;
-    width: 160rpx;
+    width: 128rpx;
 }
 
 .pos-tr {
@@ -790,7 +827,7 @@ const saveToAlbum = () => {
     left: 20%;
     right: 20%;
     margin: 0 auto;
-    width: 200rpx;
+    width: 160rpx;
 }
 
 .pos-center {
