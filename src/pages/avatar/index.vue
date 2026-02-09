@@ -47,7 +47,7 @@
 
                     <!-- Gesture Handler (Invisible Top Layer) -->
                     <view class="gesture-handler" @touchstart="onTouchStart" @touchmove.stop.prevent="onTouchMove"
-                        @touchend="onTouchEnd" @click="chooseImage" v-if="userAvatar"></view>
+                        @touchend="onTouchEnd" v-if="userAvatar"></view>
 
                     <!-- Placeholder -->
                     <view class="photo-placeholder" v-if="!userAvatar" v-on:click="chooseImage">
@@ -58,9 +58,14 @@
             </view>
         </view>
 
-        <!-- Floating Reset Button -->
-        <view class="floating-reset hover-scale" @click="resetAll">
-            <text class="reset-icon">重置</text>
+        <!-- Floating Actions -->
+        <view class="floating-actions" v-if="userAvatar">
+            <view class="floating-btn change-btn hover-scale" @click="chooseImage">
+                <text class="btn-label">换图</text>
+            </view>
+            <view class="floating-btn reset-btn hover-scale" @click="resetAll">
+                <text class="btn-label">重置</text>
+            </view>
         </view>
     </view>
 
@@ -220,7 +225,7 @@ const chooseImage = () => {
             const path = res.tempFilePaths[0]
             userAvatar.value = path
             generated.value = false
-            
+
             // Get Image Info for UI AspectFill Simulation
             uni.getImageInfo({
                 src: path,
@@ -239,6 +244,7 @@ const chooseImage = () => {
 
 // --- Gesture Logic ---
 const onTouchStart = (e) => {
+    console.log("touch start: ", e.touches.length)
     if (e.touches.length === 1) {
         startTouches = [{ x: e.touches[0].clientX, y: e.touches[0].clientY }]
     } else if (e.touches.length === 2) {
@@ -259,16 +265,24 @@ const onTouchMove = (e) => {
         startTouches[0] = { x: e.touches[0].clientX, y: e.touches[0].clientY }
     } else if (e.touches.length === 2 && startTouches.length === 2) {
         // Pinch
-        const currentDist = getDistance(e.touches[0], e.touches[1])
+        const p1 = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+        const p2 = { x: e.touches[1].clientX, y: e.touches[1].clientY }
+
+        const currentDist = getDistance(p1, p2)
         const startDist = getDistance(startTouches[0], startTouches[1])
-        if (startDist > 0) {
-            const scale = currentDist / startDist
-            imgTransform.scale *= scale
+
+        if (startDist > 1) {
+            const deltaScale = currentDist / startDist
+            let newScale = imgTransform.scale * deltaScale
+
+            // Limit scale between 0.5 and 5.0
+            if (newScale < 0.5) newScale = 0.5
+            if (newScale > 5.0) newScale = 5.0
+
+            imgTransform.scale = newScale
+
             // Update start points to smooth zoom
-            startTouches = [
-                { x: e.touches[0].clientX, y: e.touches[0].clientY },
-                { x: e.touches[1].clientX, y: e.touches[1].clientY }
-            ]
+            startTouches = [p1, p2]
         }
     }
 }
@@ -278,8 +292,8 @@ const onTouchEnd = () => {
 }
 
 const getDistance = (p1, p2) => {
-    const dx = p1.clientX - p2.clientX
-    const dy = p1.clientY - p2.clientY
+    const dx = p1.x - p2.x
+    const dy = p1.y - p2.y
     return Math.sqrt(dx * dx + dy * dy)
 }
 
@@ -287,7 +301,7 @@ const imgStyle = computed(() => {
     // Simulate aspectFill: one dimension is 100%, the other overflows
     let w = '100%', h = '100%'
     let baseTranslate = { x: 0, y: 0 }
-    
+
     if (userImgRatio.value > 1) {
         // Wide image: height=100%, width overflows
         w = (userImgRatio.value * 100) + '%'
@@ -464,34 +478,35 @@ const generateAvatar = async () => {
     const photoSize = W * photoScale
     const offset = (W - photoSize) / 2
 
-    ctx.save()
-    ctx.beginPath()
-    ctx.arc(W / 2, H / 2, photoSize / 2, 0, 2 * Math.PI)
-    ctx.clip()
     // Draw user image
     // Apply Gesture Transform
-    // Canvas Scale Factor: CANVAS_SCALE = 2
-    // Visual coordinates need to be mapped to Canvas: transform * 2
 
     // Original base size calculation (Simulating mode="aspectFill")
     let baseW = photoSize
     let baseH = photoSize
-    
+    let baseTranslateX = 0  // in pixels
+    let baseTranslateY = 0  // in pixels
+
     if (userInfo) {
         const ratio = userInfo.width / userInfo.height
         if (ratio > 1) {
-            // Wide image
+            // Wide image: height=100%, width overflows
             baseW = photoSize * ratio
             baseH = photoSize
+            // Center horizontally (match UI logic)
+            baseTranslateX = (1 - ratio) * photoSize * 0.5
         } else {
-            // Tall or square image
+            // Tall image: width=100%, height overflows
             baseW = photoSize
             baseH = photoSize / ratio
+            // Center vertically (match UI logic)
+            baseTranslateY = (1 - (1 / ratio)) * photoSize * 0.5
         }
     }
 
-    const baseX = (W - baseW) / 2
-    const baseY = (H - baseH) / 2
+    // Base position (top-left corner of the image before scaling)
+    const baseX = (W - baseW) / 2 + baseTranslateX
+    const baseY = (H - baseH) / 2 + baseTranslateY
 
     // Apply user transform
     // Note: translate is relative to center if scale origin is center
@@ -508,33 +523,29 @@ const generateAvatar = async () => {
     const panX = imgTransform.x * PX_TO_CANVAS
     const panY = imgTransform.y * PX_TO_CANVAS
 
-    // Draw X = (cx + panX) - drawW/2
+    // Draw Order:
+    // 1. User Photo + Atmosphere (both clipped in circle)
+    // 2. Frame (Foreground overlay)
+    // 3. Sticker & Tag (Topmost)
+
+    // 1. User Photo with Atmosphere Layer
+    ctx.save()
+    ctx.beginPath()
+    ctx.arc(W / 2, H / 2, photoSize / 2, 0, 2 * Math.PI)
+    ctx.clip()
+
+    // Draw user image logic...
     const drawX = (cx + panX) - (drawW / 2)
     const drawY = (cy + panY) - (drawH / 2)
-
-    // Draw Order:
-    // 1. Atmosphere (Background)
-    // 2. User Photo (Middle, clipped)
-    // 3. Frame (Foreground overlay)
-    // 4. Sticker & Tag (Topmost)
-
-    // 1. Atmosphere Layer (Gradient Mask)
+    ctx.drawImage(userImg, drawX, drawY, drawW, drawH)
+    
+    // Atmosphere gradient overlay (within circle)
     const grad = ctx.createLinearGradient(0, 0, W, H)
     grad.addColorStop(0, 'rgba(255, 154, 158, 0.2)')
     grad.addColorStop(1, 'rgba(254, 207, 239, 0.2)')
     ctx.fillStyle = grad
     ctx.fillRect(offset, offset, photoSize, photoSize)
-
-    // 2. User Photo
-    ctx.save()
-    ctx.beginPath()
-    ctx.arc(W / 2, H / 2, photoSize / 2, 0, 2 * Math.PI)
-    ctx.clip()
     
-    // Draw user image logic...
-    const drawX = (cx + panX) - (drawW / 2)
-    const drawY = (cy + panY) - (drawH / 2)
-    ctx.drawImage(userImg, drawX, drawY, drawW, drawH)
     ctx.restore() // End clip
 
     // 3. Frame Layer
@@ -571,49 +582,89 @@ const getImageInfo = (src) => new Promise((resolve) => {
 })
 
 const drawAssetAtPosition = (ctx, img, info, pos, W, H) => {
-    // UI is 500rpx, Canvas is 750px. Conversion: 1rpx = 1.5px
+    // UI container is 500rpx, Canvas is 750px. Conversion: 1rpx = 1.5px
     const rpxToPx = RPX_TO_CANVAS
-    
+    const containerSize = 500 * rpxToPx  // 500rpx → 750px
+
     // Base styles from CSS (128rpx for stickers, 160rpx for tags)
-    const stickerW = 128 * rpxToPx 
-    const tagW = 160 * rpxToPx     
-    const p10 = 10 * rpxToPx       
-    const p20 = 20 * rpxToPx       
+    const stickerW = 128 * rpxToPx
+    const tagW = 160 * rpxToPx
+    const p10 = 10 * rpxToPx
+    const p20 = 20 * rpxToPx
 
     let x = 0, y = 0, w = 0, h = 0
+    let containerW = 0, containerH = 0  // Container size from CSS
 
-    // Determine target size while maintaining ratio
+    // Define container size based on CSS position classes
     if (pos === 'bottom-center') {
-        w = tagW
-        h = info ? (w * (info.height / info.width)) : (40 * rpxToPx)
+        // CSS: width: 160rpx, height: auto (but constrained by bottom)
+        containerW = tagW
+        containerH = 80 * rpxToPx  // Reasonable max height
     } else if (pos === 'center') {
-        w = W * 0.5 
-        h = info ? (w * (info.height / info.width)) : w
-        // Ensure it doesn't exceed 60% height to avoid overflow
-        // if (h > H * 0.6) h = H * 0.6
+        // CSS: width: 50%, height: 50% of 500rpx container
+        containerW = containerSize * 0.5  // 250rpx → 375px
+        containerH = containerSize * 0.5  // 250rpx → 375px
     } else {
-        w = stickerW
-        h = info ? (w * (info.height / info.width)) : w
+        // CSS: width: 128rpx (corner stickers), roughly square
+        containerW = stickerW
+        containerH = stickerW
     }
 
-    // Logic based on position classes in CSS
+    // Calculate actual size using aspectFit logic (like CSS mode="aspectFit")
+    if (info) {
+        const imgRatio = info.width / info.height
+        const containerRatio = containerW / containerH
+        
+        if (imgRatio > containerRatio) {
+            // Image is wider: fit to width
+            w = containerW
+            h = w / imgRatio
+        } else {
+            // Image is taller: fit to height
+            h = containerH
+            w = h * imgRatio
+        }
+    } else {
+        // Fallback if no image info
+        w = containerW
+        h = containerH
+    }
+
+    // Calculate position relative to Canvas center (W/2, H/2)
+    // All positions are centered within the 750px canvas
+    const canvasOffset = (W - containerSize) / 2
+    
+    // First, calculate container position (based on CSS positioning)
+    let containerX = 0, containerY = 0
+
     switch (pos) {
         case 'bottom-right':
-            x = W - w - p10; y = H - h - p10;
-            break;
+            containerX = canvasOffset + containerSize - containerW - p10
+            containerY = canvasOffset + containerSize - containerH - p10
+            break
         case 'bottom-left':
-            x = p10; y = H - h - p10;
-            break;
+            containerX = canvasOffset + p10
+            containerY = canvasOffset + containerSize - containerH - p10
+            break
         case 'top-right':
-            x = W - w - p10; y = p10;
-            break;
+            containerX = canvasOffset + containerSize - containerW - p10
+            containerY = canvasOffset + p10
+            break
         case 'bottom-center':
-            x = (W - w) / 2; y = H - h - p20;
-            break;
+            containerX = canvasOffset + (containerSize - containerW) / 2
+            containerY = canvasOffset + containerSize - containerH - p20
+            break
         case 'center':
         default:
-            x = (W - w) / 2; y = (H - h) / 2;
+            containerX = canvasOffset + (containerSize - containerW) / 2
+            containerY = canvasOffset + (containerSize - containerH) / 2
     }
+    
+    // Then, center the image within the container (aspectFit behavior)
+    const offsetX = (containerW - w) / 2
+    const offsetY = (containerH - h) / 2
+    x = containerX + offsetX
+    y = containerY + offsetY
 
     ctx.drawImage(img, x, y, w, h)
 }
@@ -716,23 +767,54 @@ const saveToAlbum = () => {
     padding-bottom: 250rpx;
 }
 
-.floating-reset {
-    position: absolute;
+.floating-actions {
     position: absolute;
     bottom: 420rpx;
     right: 30rpx;
-    width: 80rpx;
-    width: 80rpx;
-    height: 80rpx;
-    background: rgba(255, 236, 179, 0.8);
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+    z-index: 50;
+}
+
+.floating-btn {
+    width: 90rpx;
+    height: 90rpx;
+    background: rgba(255, 236, 179, 0.9);
     border: 4rpx solid #FFD700;
     border-radius: 50%;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     box-shadow: 0 8rpx 20rpx rgba(0, 0, 0, 0.2);
-    z-index: 50;
     backdrop-filter: blur(4px);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.floating-btn:active {
+    transform: scale(0.9);
+    background: #FFD700;
+}
+
+.change-btn {
+    /* background: #FFFDE7; */
+}
+
+.btn-icon {
+    font-size: 28rpx;
+    line-height: 1;
+}
+
+.btn-label {
+    font-size: 26rpx;
+    font-weight: bold;
+    color: #fd4444;
+    line-height: 1;
+}
+
+.reset-btn .btn-label {
+    color: #fd4444;
 }
 
 .mirror-frame {
@@ -759,13 +841,12 @@ const saveToAlbum = () => {
 .avatar-canvas {
     width: 750px;
     height: 750px;
-    position: absolute;
-    top: 0;
-    left: 0;
-    transform: scale(0.3333333);
-    transform-origin: top left;
-    opacity: 0;
+    position: fixed;
+    left: -2000px;
+    top: -2000px;
     pointer-events: none;
+    opacity: 0;
+    z-index: -1;
 }
 
 .preview-layer {
@@ -1052,10 +1133,7 @@ const saveToAlbum = () => {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: 120rpx;
-    height: 100rpx;
     background: #FFECB3;
-    border-radius: 30rpx;
     border: 2rpx solid #FFD700;
 }
 

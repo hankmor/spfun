@@ -18,7 +18,7 @@
           :key="index"
           class="role-card"
           :class="role.theme"
-          @click="navTo(role.path)"
+          @click="handleRoleCardClick(role)"
         >
           <!-- Info Icon -->
           <view class="info-icon" @click.stop="openRoleModal(role)">i</view>
@@ -38,7 +38,8 @@
           <!-- Name Tag -->
           <view class="name-tag">
             <text class="name-text">{{ role.name }}</text>
-            <view class="action-btn">🔥</view>
+            <view class="action-btn" v-if="!isRoleLocked(role)">🔥</view>
+            <view class="action-btn lock-tag" v-else>🔒</view>
           </view>
         </view>
       </view>
@@ -64,7 +65,10 @@
                 </view>
             </view>
 
-            <button class="start-chat-btn" @click="startGame">👊 开始对线</button>
+            <button class="start-chat-btn" @click="startGame">
+                <text v-if="!isRoleLocked(currentRole)">👊 开始对线</text>
+                <text v-else>🔒 观看视频解锁</text>
+            </button>
         </view>
     </view>
 
@@ -98,6 +102,7 @@
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { AUNT_MONEY_PIC, AUNT_MARRIAGE_PIC, NEIGHBOR_SHOWOFF_PIC, UNCLE_STRICT_PIC } from '../../constants/roles'
+import AdManager from '../../utils/adManager'
 
 const navTo = (url) => {
   uni.navigateTo({ url })
@@ -108,8 +113,11 @@ const onImgError = (e, index) => {
     imgErrors.value[index] = true
 }
 
+const unlockedRoles = ref(new Set())
+
 const rolesData = ref([
     { 
+        id: 'aunt_money',
         name: '势利二姨', 
         desc: '工资才三千？', 
         detailDesc: '“现在的年轻人啊，眼高手低，看看隔壁王阿姨家儿子，年薪百万！” \n\n战斗指数：⭐⭐⭐⭐⭐\n必杀技：收入羞辱、凡尔赛打击',
@@ -121,6 +129,7 @@ const rolesData = ref([
         theme: 'theme-red' 
     },
     { 
+        id: 'aunt_marriage',
         name: '催婚大姑', 
         desc: '不结婚不孝！', 
         detailDesc: '“都多大了还不找对象？再挑就没人要了！姑姑给你介绍个二婚带娃的...” \n\n战斗指数：⭐⭐⭐⭐\n必杀技：焦虑贩卖、道德绑架',
@@ -132,6 +141,8 @@ const rolesData = ref([
         theme: 'theme-coral' 
     },
     { 
+        id: 'neighbor_showoff',
+        isLocked: true,
         name: '凡尔赛王姨', 
         desc: 'Lucy去巴黎了', 
         detailDesc: '“哎呀，我家Lucy非要接我去欧洲度假，我都烦死了，不像你这么清闲...” \n\n战斗指数：⭐⭐⭐\n必杀技：高级黑、明贬暗褒',
@@ -143,6 +154,8 @@ const rolesData = ref([
         theme: 'theme-red' 
     },
     { 
+        id: 'uncle_strict',
+        isLocked: true,
         name: '严肃二舅', 
         desc: '年轻人要有规划', 
         detailDesc: '（战术喝茶）“年轻人要脚踏实地，那种不稳定工作能干一辈子？考公才是出路！” \n\n战斗指数：⭐⭐⭐⭐\n必杀技：体制内优越、爹味说教',
@@ -167,12 +180,61 @@ const closeRoleModal = () => {
     showRoleModal.value = false
 }
 
+const handleRoleCardClick = (role) => {
+    currentRole.value = role
+    if (isRoleLocked(role)) {
+        // Show modal to trigger ad unlock flow
+        showRoleModal.value = true
+    } else {
+        navTo(role.path)
+    }
+}
+
+const isRoleLocked = (role) => {
+    if (!role.isLocked) return false
+    if (!AdManager.config.ad_enabled) return false
+    return !unlockedRoles.value.has(role.id)
+}
+
 const startGame = () => {
+    if (isRoleLocked(currentRole.value)) {
+        uni.showModal({
+            title: '解锁隐藏角色',
+            content: '观看完整视频即可解锁与该角色的对话？',
+            confirmText: '去解锁',
+            success: (res) => {
+                if (res.confirm) {
+                    AdManager.showRewardedVideoAd({
+                        onSuccess: () => {
+                            unlockRole(currentRole.value.id)
+                            closeRoleModal()
+                            navTo(currentRole.value.path)
+                        },
+                        onFail: (msg) => {
+                            if (msg) uni.showToast({ title: msg, icon: 'none' })
+                        }
+                    })
+                }
+            }
+        })
+        return
+    }
     closeRoleModal()
     navTo(currentRole.value.path)
 }
 
-onLoad(() => {
+const unlockRole = (roleId) => {
+    unlockedRoles.value.add(roleId)
+    uni.setStorageSync('unlocked_roles_history', JSON.stringify([...unlockedRoles.value]))
+    uni.showToast({ title: '解锁成功！' })
+}
+
+onLoad(async () => {
+    await AdManager.init()
+    const stored = uni.getStorageSync('unlocked_roles_history')
+    if (stored) {
+        unlockedRoles.value = new Set(JSON.parse(stored))
+    }
     resolveCloudUrls()
 })
 
@@ -712,6 +774,12 @@ const resolveCloudUrls = async () => {
     padding: 4rpx 16rpx;
     border-radius: 20rpx;
     box-shadow: 0 2rpx 6rpx rgba(0,0,0,0.1);
+}
+
+.lock-tag {
+    background: #FFECB3;
+    color: #FF8F00;
+    border: 1rpx solid #FFD700;
 }
 
 /* Animations included in style tag */
