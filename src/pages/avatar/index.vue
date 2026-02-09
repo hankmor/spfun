@@ -512,27 +512,43 @@ const generateAvatar = async () => {
     const drawX = (cx + panX) - (drawW / 2)
     const drawY = (cy + panY) - (drawH / 2)
 
-    ctx.drawImage(userImg, drawX, drawY, drawW, drawH)
+    // Draw Order:
+    // 1. Atmosphere (Background)
+    // 2. User Photo (Middle, clipped)
+    // 3. Frame (Foreground overlay)
+    // 4. Sticker & Tag (Topmost)
 
-    // 3. Atmosphere Layer (Gradient Mask)
+    // 1. Atmosphere Layer (Gradient Mask)
     const grad = ctx.createLinearGradient(0, 0, W, H)
     grad.addColorStop(0, 'rgba(255, 154, 158, 0.2)')
     grad.addColorStop(1, 'rgba(254, 207, 239, 0.2)')
     ctx.fillStyle = grad
     ctx.fillRect(offset, offset, photoSize, photoSize)
+
+    // 2. User Photo
+    ctx.save()
+    ctx.beginPath()
+    ctx.arc(W / 2, H / 2, photoSize / 2, 0, 2 * Math.PI)
+    ctx.clip()
+    
+    // Draw user image logic...
+    const drawX = (cx + panX) - (drawW / 2)
+    const drawY = (cy + panY) - (drawH / 2)
+    ctx.drawImage(userImg, drawX, drawY, drawW, drawH)
     ctx.restore() // End clip
 
-    // 4. Frame Layer (Full size overlay)
+    // 3. Frame Layer
     if (frameImg) {
+        // Frame is full canvas size, draw at 0,0
         ctx.drawImage(frameImg, 0, 0, W, H)
     }
 
-    // 5. Sticker Layer
+    // 4. Sticker Layer
     if (stickerImg && selectedLayers.sticker) {
         drawAssetAtPosition(ctx, stickerImg, stickerInfo, selectedLayers.sticker.position, W, H)
     }
 
-    // 6. Tag Layer
+    // 5. Tag Layer
     if (tagImg && selectedLayers.tag) {
         drawAssetAtPosition(ctx, tagImg, tagInfo, selectedLayers.tag.position, W, H)
     }
@@ -571,10 +587,10 @@ const drawAssetAtPosition = (ctx, img, info, pos, W, H) => {
         w = tagW
         h = info ? (w * (info.height / info.width)) : (40 * rpxToPx)
     } else if (pos === 'center') {
-        w = W * 0.5 // 50% of 750 = 375px
+        w = W * 0.5 
         h = info ? (w * (info.height / info.width)) : w
-        // Ensure it doesn't exceed 50% height
-        if (h > H * 0.5) h = H * 0.5
+        // Ensure it doesn't exceed 60% height to avoid overflow
+        // if (h > H * 0.6) h = H * 0.6
     } else {
         w = stickerW
         h = info ? (w * (info.height / info.width)) : w
