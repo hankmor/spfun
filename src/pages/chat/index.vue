@@ -14,8 +14,8 @@
                 :class="msg.role === 'user' ? 'msg-row-user' : 'msg-row-ai'">
                 <!-- Avatar -->
                 <image class="avatar"
-                    :src="msg.role === 'user' ? (userProfile?.avatarUrl || '/static/logo.webp') : roleAvatar"
-                    mode="aspectFill"></image>
+                    :src="msg.role === 'user' ? (userProfile?.avatarUrl || defaultAvatar) : roleAvatar"
+                    mode="aspectFill" @click="openProfileModal"></image>
 
                 <view class="msg-body">
                     <!-- Bubble -->
@@ -167,6 +167,34 @@
                 </view>
             </view>
         </view>
+
+        <!-- User Profile Modal -->
+        <view class="modal-mask" v-if="showProfileModal" @click="closeProfileModal">
+            <view class="modal-content profile-modal" @click.stop>
+                <view class="modal-header">
+                    <text class="modal-title">完善个人资料</text>
+                    <view class="close-btn" @click="closeProfileModal">✕</view>
+                </view>
+                <view class="modal-body">
+                    <button class="avatar-wrapper" open-type="chooseAvatar" @chooseavatar="onChooseAvatar">
+                        <image class="profile-avatar" :src="tempAvatar || defaultAvatar"></image>
+                        <view class="avatar-edit-tag">点击修改</view>
+                    </button>
+                    
+                    <view class="input-group">
+                        <text class="label">你的昵称</text>
+                        <input type="nickname" class="nickname-input" v-model="tempNickname" 
+                            placeholder="请输入昵称" @input="onNicknameInput" @blur="onNicknameBlur" />
+                    </view>
+
+                    <view class="profile-tips">设置后，头像和昵称将同步显示在对线记录中</view>
+
+                    <button class="save-profile-btn" @click="saveProfile">
+                        🎉 准备好了
+                    </button>
+                </view>
+            </view>
+        </view>
     </view>
 
     <!-- Hit Effect Overlay -->
@@ -202,6 +230,10 @@ const inputPlaceholder = ref('输了什么都别输了气势...')
 const loading = ref(false)
 const scrollTarget = ref('')
 const userProfile = ref(null)
+const defaultAvatar = ref('/static/logo.webp')
+const showProfileModal = ref(false)
+const tempAvatar = ref('')
+const tempNickname = ref('')
 
 // Keyboard Logic
 const keyboardHeight = ref(0)
@@ -320,6 +352,8 @@ const fetchGodModeReply = async () => {
 }
 
 const useGodMode = () => {
+    if (loading.value) return // 防止在发送中或 AI 回复过程中误导触发
+
     // 优先判断全局广告开关
     if (!AdManager.config.ad_enabled) {
         fetchGodModeReply()
@@ -487,6 +521,8 @@ const saveHistory = () => {
 }
 
 const confirmReset = () => {
+    if (loading.value) return // 防止误导触发
+
     uni.showModal({
         title: '重新开始',
         content: '确定要清除所有聊天记录并重新开始吗？',
@@ -515,6 +551,11 @@ const resolveCloudUrls = async () => {
 
             const currentId = ROLE_INFO[roleId.value]?.avatar
             if (currentId && urlMap[currentId]) roleAvatar.value = urlMap[currentId]
+            
+            // Set default user avatar from cloud
+            if (urlMap[LOGO_PIC]) {
+                defaultAvatar.value = urlMap[LOGO_PIC]
+            }
 
             // Update all roles
             Object.keys(ROLE_INFO).forEach(k => {
@@ -533,14 +574,57 @@ const formatTime = () => {
 const checkUserProfile = () => {
     try {
         const profile = uni.getStorageSync('user_profile')
-        if (profile && typeof profile === 'object') {
+        if (profile && typeof profile === 'object' && profile.avatarUrl) {
             userProfile.value = profile
+            tempAvatar.value = profile.avatarUrl
+            tempNickname.value = profile.nickname || ''
         } else {
             userProfile.value = { gender: 'unknown' }
         }
     } catch (e) {
         userProfile.value = { gender: 'unknown' }
     }
+}
+
+const openProfileModal = () => {
+    showProfileModal.value = true
+}
+
+const closeProfileModal = () => {
+    showProfileModal.value = false
+}
+
+const onChooseAvatar = (e) => {
+    const { avatarUrl } = e.detail
+    tempAvatar.value = avatarUrl
+}
+
+const onNicknameInput = (e) => {
+    tempNickname.value = e.detail.value
+}
+
+const onNicknameBlur = (e) => {
+    // 微信 type="nickname" 在键盘选择建议后往往不触发 input 事件，必须在 blur 时手动同步
+    if (e.detail.value) {
+        tempNickname.value = e.detail.value
+    }
+}
+
+const saveProfile = () => {
+    if (!tempAvatar.value) {
+        uni.showToast({ title: '请选择头像', icon: 'none' })
+        return
+    }
+    const profile = {
+        avatarUrl: tempAvatar.value,
+        nickname: tempNickname.value || '网友',
+        gender: 'unknown'
+    }
+    userProfile.value = profile
+    uni.setStorageSync('user_profile', profile)
+    uni.setStorageSync('profile_modal_shown', true)
+    showProfileModal.value = false
+    uni.showToast({ title: '资料已更新', icon: 'none' })
 }
 
 const getGreeting = (id) => {
@@ -601,6 +685,8 @@ const getGreeting = (id) => {
 const sendMessage = async () => {
     if (!inputValue.value.trim()) return
     if (loading.value) return
+    
+    loading.value = true // 立即锁定状态，防止重复发送或误触发其他浮动按钮
 
     // 强行收起键盘，确保在发送后 UI 能立即触发回缩逻辑
     uni.hideKeyboard()
@@ -618,7 +704,7 @@ const sendMessage = async () => {
 
     messages.value.push({ role: 'user', content })
     saveHistory()
-    loading.value = true
+    // loading.value = true // 已前置到函数开头
     scrollToBottom()
 
     try {
@@ -950,7 +1036,7 @@ const drawChatCard = async () => {
     const msgs = messages.value.slice(-4) // Last 4 messages
     console.log("last 4 msg: ", msgs)
 
-    const userAvatarSrc = userProfile.value?.avatarUrl || '/static/logo.webp'
+    const userAvatarSrc = userProfile.value?.avatarUrl || defaultAvatar.value
     const roleAvatarSrc = roleAvatar.value || AUNT_MONEY_PIC
     const logoSrc = QR_PIC
 
@@ -1836,5 +1922,96 @@ onShareAppMessage((res) => {
 .offscreen-canvas {
     position: fixed;
     left: 9000px;
+}
+
+/* 完善资料模态框样式 */
+.profile-modal {
+    width: 620rpx;
+}
+
+.avatar-wrapper {
+    background: none;
+    padding: 0;
+    margin: 30rpx auto 50rpx;
+    width: 180rpx;
+    height: 180rpx;
+    position: relative;
+    border-radius: 50%;
+    overflow: visible;
+}
+
+.avatar-wrapper::after {
+    border: none;
+}
+
+.profile-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 6rpx solid #FFD700;
+    box-shadow: 0 10rpx 20rpx rgba(183, 28, 28, 0.15);
+}
+
+.avatar-edit-tag {
+    position: absolute;
+    bottom: -10rpx;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #B71C1C;
+    color: #FFF;
+    font-size: 20rpx;
+    padding: 4rpx 16rpx;
+    border-radius: 20rpx;
+    white-space: nowrap;
+    border: 2rpx solid #FFF;
+}
+
+.input-group {
+    width: 100%;
+    margin-bottom: 40rpx;
+}
+
+.label {
+    font-size: 26rpx;
+    color: #666;
+    margin-bottom: 16rpx;
+    display: block;
+    text-align: left;
+}
+
+.nickname-input {
+    width: 100%;
+    height: 90rpx;
+    background: #F5F5F5;
+    border-radius: 20rpx;
+    padding: 0 30rpx;
+    box-sizing: border-box;
+    font-size: 28rpx;
+    text-align: left;
+}
+
+.profile-tips {
+    font-size: 24rpx;
+    color: #999;
+    margin-bottom: 50rpx;
+    line-height: 1.5;
+}
+
+.save-profile-btn {
+    width: 100%;
+    height: 100rpx;
+    background: linear-gradient(135deg, #FFC107 0%, #FF8F00 100%);
+    color: #FFF;
+    border-radius: 50rpx;
+    font-weight: 900;
+    font-size: 32rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10rpx 30rpx rgba(255, 143, 0, 0.3);
+}
+
+.save-profile-btn:active {
+    transform: scale(0.98);
 }
 </style>

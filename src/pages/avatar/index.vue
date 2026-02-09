@@ -108,11 +108,31 @@
             </button>
         </view>
     </view>
+
+    <!-- Share Result Modal -->
+    <view class="modal-mask" v-if="showResultModal" @click="closeResultModal">
+        <view class="modal-content result-modal" @click.stop>
+            <view class="modal-header">
+                <text class="modal-title">🎉 开运大片制作成功</text>
+                <view class="close-btn" @click="closeResultModal">✕</view>
+            </view>
+            <view class="modal-body">
+                <view class="result-preview-wrapper shadow-lg">
+                    <image :src="generatedImagePath" class="result-image" mode="aspectFit"></image>
+                </view>
+                <view class="result-tips">已同步预览，可保存到相册或分享给好友</view>
+                <view class="modal-btns">
+                    <button class="m-btn btn-save" @click="saveGeneratedImage">📥 保存到相册</button>
+                    <button class="m-btn btn-share" open-type="share">🧧 分享好运</button>
+                </view>
+            </view>
+        </view>
+    </view>
 </template>
 
 <script setup>
 import { ref, reactive, computed } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import AdManager from '../../utils/adManager'
 
 // Canvas Constant
@@ -129,6 +149,10 @@ const userAvatar = ref('')
 const userImgRatio = ref(1) // width / height
 const generated = ref(false)
 const activeTab = ref('frame') // frame, sticker, tag
+
+// Share Modal State
+const showResultModal = ref(false)
+const generatedImagePath = ref('')
 
 // Assets Data (Mocked initially, will load from DB)
 const assetsMap = reactive({
@@ -155,6 +179,12 @@ const imgTransform = reactive({
 let startTouches = [] // Track touch points
 
 onLoad(async () => {
+    // 显式开启分享菜单，确保 open-type="share" 能正确触发
+    uni.showShareMenu({
+        withShareTicket: true,
+        menus: ['shareAppMessage', 'shareTimeline']
+    })
+
     await AdManager.init()
     fetchAssets()
     // Load local unlocked history
@@ -538,14 +568,14 @@ const generateAvatar = async () => {
     const drawX = (cx + panX) - (drawW / 2)
     const drawY = (cy + panY) - (drawH / 2)
     ctx.drawImage(userImg, drawX, drawY, drawW, drawH)
-    
+
     // Atmosphere gradient overlay (within circle)
     const grad = ctx.createLinearGradient(0, 0, W, H)
     grad.addColorStop(0, 'rgba(255, 154, 158, 0.2)')
     grad.addColorStop(1, 'rgba(254, 207, 239, 0.2)')
     ctx.fillStyle = grad
     ctx.fillRect(offset, offset, photoSize, photoSize)
-    
+
     ctx.restore() // End clip
 
     // 3. Frame Layer
@@ -567,9 +597,58 @@ const generateAvatar = async () => {
     // Draw
     ctx.draw(false, () => {
         setTimeout(() => {
-            saveToAlbum()
+            prepareResult()
             uni.hideLoading()
         }, 500)
+    })
+}
+
+const prepareResult = () => {
+    // We drew on 750x750 logical space
+    const logicalSize = 750
+    // Target 1000x1000 for actual saved image
+    const destSize = 1000
+
+    uni.canvasToTempFilePath({
+        canvasId: 'avatarCanvas',
+        width: logicalSize,
+        height: logicalSize,
+        destWidth: destSize,
+        destHeight: destSize,
+        success: (res) => {
+            generatedImagePath.value = res.tempFilePath
+            showResultModal.value = true
+        },
+        fail: (err) => {
+            console.error('Canvas to path failed', err)
+            uni.showToast({ title: '生成失败', icon: 'none' })
+        }
+    })
+}
+
+const closeResultModal = () => {
+    showResultModal.value = false
+}
+
+const saveGeneratedImage = () => {
+    if (!generatedImagePath.value) return
+
+    uni.saveImageToPhotosAlbum({
+        filePath: generatedImagePath.value,
+        success: () => {
+            uni.showToast({ title: '已保存到相册' })
+        },
+        fail: (err) => {
+            if (err.errMsg.includes('auth deny')) {
+                uni.showModal({
+                    title: '提示',
+                    content: '需要您的相册权限才能保存，请到设置中开启',
+                    showCancel: false
+                })
+            } else {
+                uni.showToast({ title: '保存失败', icon: 'none' })
+            }
+        }
     })
 }
 
@@ -614,7 +693,7 @@ const drawAssetAtPosition = (ctx, img, info, pos, W, H) => {
     if (info) {
         const imgRatio = info.width / info.height
         const containerRatio = containerW / containerH
-        
+
         if (imgRatio > containerRatio) {
             // Image is wider: fit to width
             w = containerW
@@ -633,7 +712,7 @@ const drawAssetAtPosition = (ctx, img, info, pos, W, H) => {
     // Calculate position relative to Canvas center (W/2, H/2)
     // All positions are centered within the 750px canvas
     const canvasOffset = (W - containerSize) / 2
-    
+
     // First, calculate container position (based on CSS positioning)
     let containerX = 0, containerY = 0
 
@@ -659,7 +738,7 @@ const drawAssetAtPosition = (ctx, img, info, pos, W, H) => {
             containerX = canvasOffset + (containerSize - containerW) / 2
             containerY = canvasOffset + (containerSize - containerH) / 2
     }
-    
+
     // Then, center the image within the container (aspectFit behavior)
     const offsetX = (containerW - w) / 2
     const offsetY = (containerH - h) / 2
@@ -669,27 +748,40 @@ const drawAssetAtPosition = (ctx, img, info, pos, W, H) => {
     ctx.drawImage(img, x, y, w, h)
 }
 
-const saveToAlbum = () => {
-    // We drew on 750x750 logical space
-    const logicalSize = 750
-    // Target 1000x1000 for actual saved image
-    const destSize = 1000
+const avatarShareTitles = [
+    '我的2026开运头像，快来领取你的好运！',
+    '2026好运连连，从换头像开始！',
+    '新年新气象，我的2026专属开运头像！',
+    '换上这个头像，2026好运挡不住！',
+    '2026开运头像已生成，快来一起沾沾喜气！',
+    '定制你的2026开运头像，好运一整年！',
+    '2026年，用这个头像开启你的好运之旅！',
+    '新年换新颜，2026开运头像等你来领！',
+    '我的2026开运头像，你也可以拥有！',
+    '2026好运头像，让你的新年充满惊喜！'
+]
 
-    uni.canvasToTempFilePath({
-        canvasId: 'avatarCanvas',
-        width: logicalSize,
-        height: logicalSize,
-        destWidth: destSize,
-        destHeight: destSize,
-        success: (res) => {
-            uni.saveImageToPhotosAlbum({
-                filePath: res.tempFilePath,
-                success: () => uni.showToast({ title: '已保存到相册' }),
-                fail: () => uni.showToast({ title: '保存失败', icon: 'none' })
-            })
-        }
-    })
+const getRandomAvatarTitle = () => {
+    const randomIndex = Math.floor(Math.random() * avatarShareTitles.length)
+    return avatarShareTitles[randomIndex]
 }
+
+onShareAppMessage((res) => {
+    const title = getRandomAvatarTitle()
+    console.log("onShareAppMessage called with title:", title)
+    return {
+        title: title,
+        path: '/pages/avatar/index',
+        imageUrl: generatedImagePath.value || ''
+    }
+})
+
+onShareTimeline(() => {
+    return {
+        title: '我的 2026 开运头像，快来领取你的好运！',
+        imageUrl: generatedImagePath.value || ''
+    }
+})
 </script>
 
 <style scoped>
@@ -1179,5 +1271,130 @@ const saveToAlbum = () => {
     50% {
         transform: rotate(5deg);
     }
+}
+
+/* Modal Mask */
+.modal-mask {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+.modal-content {
+    width: 620rpx;
+    background: #FFF8E1;
+    border-radius: 40rpx;
+    padding: 40rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.5);
+    border: 4rpx solid #FFD700;
+}
+
+.result-modal {
+    animation: zoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes zoomIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.modal-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30rpx;
+}
+
+.modal-title {
+    font-size: 32rpx;
+    font-weight: 900;
+    color: #D32F2F;
+}
+
+.close-btn {
+    font-size: 40rpx;
+    color: #999;
+    padding: 10rpx;
+}
+
+.modal-body {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.result-preview-wrapper {
+    width: 480rpx;
+    height: 480rpx;
+    background: #FFF;
+    border-radius: 20rpx;
+    overflow: hidden;
+    margin-bottom: 30rpx;
+    border: 8rpx solid #FFF;
+}
+
+.result-image {
+    width: 100%;
+    height: 100%;
+}
+
+.result-tips {
+    font-size: 24rpx;
+    color: #666;
+    margin-bottom: 40rpx;
+}
+
+.modal-btns {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    gap: 20rpx;
+}
+
+.m-btn {
+    flex: 1;
+    height: 90rpx;
+    border-radius: 45rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28rpx;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.btn-save {
+    background: #D32F2F;
+    color: #FFF;
+}
+
+.btn-share {
+    background: #FFA000;
+    color: #FFF;
+    box-shadow: 0 6rpx 16rpx rgba(255, 160, 0, 0.3);
+}
+
+.m-btn:active {
+    transform: scale(0.95);
+    opacity: 0.9;
 }
 </style>
