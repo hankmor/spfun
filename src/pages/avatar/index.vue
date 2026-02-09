@@ -47,7 +47,7 @@
 
                     <!-- Gesture Handler (Invisible Top Layer) -->
                     <view class="gesture-handler" @touchstart="onTouchStart" @touchmove.stop.prevent="onTouchMove"
-                        @touchend="onTouchEnd" v-if="userAvatar"></view>
+                        @touchend="onTouchEnd" @click="chooseImage" v-if="userAvatar"></view>
 
                     <!-- Placeholder -->
                     <view class="photo-placeholder" v-if="!userAvatar" v-on:click="chooseImage">
@@ -111,12 +111,17 @@ import { onLoad } from '@dcloudio/uni-app'
 import AdManager from '../../utils/adManager'
 
 // Canvas Constant
-// Canvas Constant
-// Logical size 750x750 (standard HD), UI container is 250px (approx 500rpx)
-const CANVAS_SCALE = 3
+// Canvas Constants & Dynamic Scaling
+const sys = uni.getSystemInfoSync()
+const windowWidth = sys.windowWidth
+// 1 rpx always = 1.5 Canvas units (since 750 / 500 = 1.5)
+const RPX_TO_CANVAS = 1.5
+// 1 window px = (750 / windowWidth) * 1.5 Canvas units
+const PX_TO_CANVAS = (750 / windowWidth) * RPX_TO_CANVAS
 
 // State
 const userAvatar = ref('')
+const userImgRatio = ref(1) // width / height
 const generated = ref(false)
 const activeTab = ref('frame') // frame, sticker, tag
 
@@ -212,12 +217,22 @@ const chooseImage = () => {
         sizeType: ['compressed'],
         sourceType: ['album', 'camera'],
         success: (res) => {
-            userAvatar.value = res.tempFilePaths[0]
+            const path = res.tempFilePaths[0]
+            userAvatar.value = path
             generated.value = false
-            // Reset transform when new image picked
-            // imgTransform.x = 0
-            // imgTransform.y = 0
-            // imgTransform.scale = 1
+            
+            // Get Image Info for UI AspectFill Simulation
+            uni.getImageInfo({
+                src: path,
+                success: (info) => {
+                    userImgRatio.value = info.width / info.height
+                }
+            })
+
+            // Reset transform
+            imgTransform.x = 0
+            imgTransform.y = 0
+            imgTransform.scale = 1
         }
     })
 }
@@ -269,8 +284,29 @@ const getDistance = (p1, p2) => {
 }
 
 const imgStyle = computed(() => {
+    // Simulate aspectFill: one dimension is 100%, the other overflows
+    let w = '100%', h = '100%'
+    let baseTranslate = { x: 0, y: 0 }
+    
+    if (userImgRatio.value > 1) {
+        // Wide image: height=100%, width overflows
+        w = (userImgRatio.value * 100) + '%'
+        h = '100%'
+        // Center horizontally
+        baseTranslate.x = (1 - userImgRatio.value) * 50 // in %
+    } else {
+        // Tall image: width=100%, height overflows
+        w = '100%'
+        h = (100 / userImgRatio.value) + '%'
+        // Center vertically
+        baseTranslate.y = (1 - (1 / userImgRatio.value)) * 50 // in %
+    }
+
     return {
-        transform: `translate(${imgTransform.x}px, ${imgTransform.y}px) scale(${imgTransform.scale})`
+        width: w,
+        height: h,
+        // Combined: initial centering + user pan + user scale
+        transform: `translate(calc(${baseTranslate.x}% + ${imgTransform.x}px), calc(${baseTranslate.y}% + ${imgTransform.y}px)) scale(${imgTransform.scale})`
     }
 })
 
@@ -468,9 +504,9 @@ const generateAvatar = async () => {
     const cx = baseX + baseW / 2
     const cy = baseY + baseH / 2
 
-    // Pan is in CSS pixels, so * CANVAS_SCALE
-    const panX = imgTransform.x * CANVAS_SCALE
-    const panY = imgTransform.y * CANVAS_SCALE
+    // Pan is in Window pixels, map to Canvas logical pixels via dynamic scale
+    const panX = imgTransform.x * PX_TO_CANVAS
+    const panY = imgTransform.y * PX_TO_CANVAS
 
     // Draw X = (cx + panX) - drawW/2
     const drawX = (cx + panX) - (drawW / 2)
@@ -520,23 +556,25 @@ const getImageInfo = (src) => new Promise((resolve) => {
 
 const drawAssetAtPosition = (ctx, img, info, pos, W, H) => {
     // UI is 500rpx, Canvas is 750px. Conversion: 1rpx = 1.5px
-    const rpxToPx = 1.5
+    const rpxToPx = RPX_TO_CANVAS
     
-    // Base styles from CSS (applying extra 0.8 scale to make it look tighter)
-    const stickerW = 160 * rpxToPx * 0.8 // 128rpx -> 192px
-    const tagW = 200 * rpxToPx * 0.8     // 160rpx -> 240px
-    const p10 = 10 * rpxToPx       // 15px
-    const p20 = 20 * rpxToPx       // 30px
+    // Base styles from CSS (128rpx for stickers, 160rpx for tags)
+    const stickerW = 128 * rpxToPx 
+    const tagW = 160 * rpxToPx     
+    const p10 = 10 * rpxToPx       
+    const p20 = 20 * rpxToPx       
 
     let x = 0, y = 0, w = 0, h = 0
 
     // Determine target size while maintaining ratio
     if (pos === 'bottom-center') {
         w = tagW
-        h = info ? (w * (info.height / info.width)) : (60 * CANVAS_SCALE)
+        h = info ? (w * (info.height / info.width)) : (40 * rpxToPx)
     } else if (pos === 'center') {
-        w = W * 0.5 // 50%
+        w = W * 0.5 // 50% of 750 = 375px
         h = info ? (w * (info.height / info.width)) : w
+        // Ensure it doesn't exceed 50% height
+        if (h > H * 0.5) h = H * 0.5
     } else {
         w = stickerW
         h = info ? (w * (info.height / info.width)) : w
@@ -665,7 +703,7 @@ const saveToAlbum = () => {
 .floating-reset {
     position: absolute;
     position: absolute;
-    bottom: 380rpx;
+    bottom: 420rpx;
     right: 30rpx;
     width: 80rpx;
     width: 80rpx;
@@ -684,7 +722,7 @@ const saveToAlbum = () => {
 .mirror-frame {
     width: 680rpx;
     height: 680rpx;
-    background-image: url('../../static/images/ui_mirror_frame.png');
+    /* background-image: url('../../static/images/ui_mirror_frame.png'); */
     background-size: 100% 100%;
     background-repeat: no-repeat;
     position: relative;
@@ -747,8 +785,8 @@ const saveToAlbum = () => {
 }
 
 .user-photo {
-    width: 100%;
-    height: 100%;
+    /* Dynamics handled by imgStyle */
+    display: block;
 }
 
 .atmosphere-layer {
