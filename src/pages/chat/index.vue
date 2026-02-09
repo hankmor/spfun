@@ -409,14 +409,13 @@ const URGENCY_TITLES = [
 ]
 
 const SINGLE_TITLES = [
-    "这也太扎心了...",
+    "哎，这也太扎心了...",
     "听听，这是人话吗？",
     "求神评！怎么怼回去？",
     "由于语言过激，已被踢出群聊",
-    "今日份的“亲切问候”",
+    "来自长辈们的“亲切问候”",
     "别人过年，我渡劫...",
-    "本是同根生，相煎何太急？",
-    "还能愉快的玩耍吗？",
+    "大过年的，还能愉快的玩耍吗？",
 ]
 
 const HELP_GUIDES = [
@@ -425,13 +424,13 @@ const HELP_GUIDES = [
     "别光看，快来帮我怼！",
     "你的神评，能救我一命",
     "亲戚太强，请求火力支援",
-    "扫码支招，功德无量",
+    "扫码支招，功德无量，求救",
     "会说话就多说点，帮帮我",
-    "一人一句，怼赢这局"
+    "一人一句，帮我怼赢这局"
 ]
 
 const getRandomTitle = (type) => {
-    const arr = type === 'chat' ? URGENCY_TITLES : SINGLE_TITLES
+    const arr = type === 'chat' ? HELP_GUIDES : SINGLE_TITLES
     return arr[Math.floor(Math.random() * arr.length)]
 }
 

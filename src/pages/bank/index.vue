@@ -73,7 +73,7 @@
                 </view>
 
                 <!-- Watermark / HD Toggle -->
-                <view class="hd-toggle" v-if="posterPath">
+                <view class="hd-toggle" v-if="posterPath && adEnabled">
                     <view v-if="!isHD" class="unlock-btn" @click="unlockHD">
                         <text>看视频去水印</text>
                     </view>
@@ -111,11 +111,17 @@ import AdManager from '../../utils/adManager'
 const showBannerAd = ref(false)
 const bannerAdId = ref('')
 const isHD = ref(false)
+const adEnabled = ref(false)
 
 onLoad(() => {
     AdManager.init().then(() => {
+        adEnabled.value = AdManager.config.ad_enabled
         showBannerAd.value = AdManager.config.ad_enabled
         bannerAdId.value = AdManager.config.banner_ad_id
+        // If ads are disabled, default to HD
+        if (!AdManager.config.ad_enabled) {
+            isHD.value = true
+        }
     })
 })
 
@@ -139,6 +145,19 @@ const LIE_QUOTES = [
     '妈妈：存银行吃利息。\n现实：利息没见着，本金也没了。',
     '妈妈：怕你乱花。\n现实：她花得比你开心多了。',
     '妈妈：以后给你买房。\n现实：首付还得你自己凑。'
+]
+
+const SHARE_TITLES = [
+    '妈，当年那笔${amount}元压岁钱，你帮我存着，现在利息结一下？',
+    '寻找2010年被妈妈代为保管的${amount}元巨款，现在值多少？',
+    '扎心了！如果当年妈妈没拿走那${amount}元，我现在可能已经是存款大户了。',
+    '妈，这是一份来自2010年的银行账单，请过目（那${amount}元去哪了？）',
+    '在线急等：妈妈帮我存的${amount}元压岁钱，长大后能换套房吗？',
+    '谁懂啊！算完这笔${amount}元压岁钱的现值，我真的哭得很大声。',
+    '妈，还记得当年被你收走的${amount}元压岁钱吗？利息翻了好几倍！',
+    '震惊！那笔被妈妈“骗”走的${amount}元，如今竟然升值到了这个数！',
+    '反击指南：如何委婉地向妈妈讨回当年的${amount}元压岁钱？',
+    '妈妈套路深，我的钱回不来。当年的${amount}块，现在值多少？'
 ]
 
 const INVESTMENTS = [
@@ -377,8 +396,8 @@ const generatePoster = async () => {
     }
 
     // Watermark Logic
-    console.log('Generating poster, isHD:', isHD.value)
-    if (!isHD.value) {
+    console.log('Generating poster, isHD:', isHD.value, 'adEnabled:', adEnabled.value)
+    if (!isHD.value && adEnabled.value) {
         ctx.setFontSize(14 * SCALE)
         ctx.font = `${14 * SCALE}px sans-serif`
         ctx.fillStyle = 'rgba(255, 255, 255, 0.6)'
@@ -427,7 +446,7 @@ const savePoster = async () => {
     if (!posterPath.value) return
 
     // Check if user wants HD but hasn't unlocked it
-    if (!isHD.value && AdManager.config.ad_enabled) {
+    if (!isHD.value && adEnabled.value) {
         uni.showModal({
             title: '保存原图',
             content: '当前为带水印版本，是否看视频解锁高清无水印原图？',
@@ -459,8 +478,12 @@ const saveToAlbum = () => {
 
 // Share Logic
 onShareAppMessage(() => {
+    const amount = form.amount || '0'
+    const randomIndex = Math.floor(Math.random() * SHARE_TITLES.length)
+    const title = SHARE_TITLES[randomIndex].replace('${amount}', amount)
+
     return {
-        title: `妈，当年那笔${form.amount || '压岁'}钱，现在值多少你知道吗？`,
+        title: title,
         path: '/pages/bank/index',
         imageUrl: posterPath.value || ''
     }

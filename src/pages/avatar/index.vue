@@ -103,7 +103,7 @@
         <!-- Actions Row -->
         <view class="actions-row">
             <button class="magic-btn hover-scale" @click="generateAvatar">
-                <text class="magic-icon">✨</text>
+                <!-- <text class="magic-icon">✨</text> -->
                 <text>生成开运大片</text>
             </button>
         </view>
