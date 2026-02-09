@@ -23,82 +23,84 @@
                     <canvas canvas-id="avatarCanvas" id="avatarCanvas" class="avatar-canvas"></canvas>
 
                     <!-- Preview Layer (Visual) -->
-                    <view class="preview-layer" @click="chooseImage" v-if="!generated">
-                        <!-- 1. Base Avatar (Centered & Circular) -->
-                        <view class="avatar-mask">
-                            <image class="user-photo" :src="userAvatar || ''" mode="aspectFill"></image>
-                        </view>
+                    <!-- 1. Base Avatar -->
+                    <view class="avatar-mask">
+                        <image class="user-photo" :src="userAvatar || ''" :style="imgStyle" mode="aspectFill"></image>
+                    </view>
 
-                        <!-- 2. Atmosphere Filter (Optional) -->
-                        <view class="atmosphere-layer"></view>
+                    <!-- 2. Atmosphere Filter (Optional) -->
+                    <view class="atmosphere-layer"></view>
 
-                        <!-- 3. Frame Layer (Supports overflow) -->
-                        <image v-if="selectedLayers.frame" class="layer-image layer-frame"
-                            :src="selectedLayers.frame.url" mode="aspectFit"></image>
+                    <!-- 3. Frame Layer (Supports overflow) -->
+                    <image v-if="selectedLayers.frame" class="layer-image layer-frame" :src="selectedLayers.frame.url"
+                        mode="aspectFit"></image>
 
-                        <!-- 4. Sticker Layer -->
-                        <image v-if="selectedLayers.sticker" class="layer-image layer-sticker"
-                            :class="getActionClass(selectedLayers.sticker)" :src="selectedLayers.sticker.url"
-                            mode="aspectFit"></image>
+                    <!-- 4. Sticker Layer -->
+                    <image v-if="selectedLayers.sticker" class="layer-image layer-sticker"
+                        :class="getActionClass(selectedLayers.sticker)" :src="selectedLayers.sticker.url"
+                        mode="aspectFit"></image>
 
-                        <!-- 5. Tag Layer -->
-                        <image v-if="selectedLayers.tag" class="layer-image layer-tag"
-                            :class="getActionClass(selectedLayers.tag)" :src="selectedLayers.tag.url" mode="aspectFit">
-                        </image>
+                    <!-- 5. Tag Layer -->
+                    <image v-if="selectedLayers.tag" class="layer-image layer-tag"
+                        :class="getActionClass(selectedLayers.tag)" :src="selectedLayers.tag.url" mode="aspectFit">
+                    </image>
 
-                        <!-- Placeholder -->
-                        <view class="photo-placeholder" v-if="!userAvatar">
-                            <text class="plus-icon">📷</text>
-                            <text class="hint-text">点击上传照片</text>
-                        </view>
+                    <!-- Gesture Handler (Invisible Top Layer) -->
+                    <view class="gesture-handler" @touchstart="onTouchStart" @touchmove.stop.prevent="onTouchMove"
+                        @touchend="onTouchEnd" v-if="userAvatar"></view>
+
+                    <!-- Placeholder -->
+                    <view class="photo-placeholder" v-if="!userAvatar" v-on:click="chooseImage">
+                        <text class="plus-icon">📷</text>
+                        <text class="hint-text">点击上传照片</text>
                     </view>
                 </view>
-            </view>
-
-            <!-- Floating Reset Button -->
-            <view class="floating-reset hover-scale" @click="resetAll">
-                <text class="reset-icon">重置</text>
             </view>
         </view>
 
-        <!-- Controls Dock -->
-        <view class="dock-panel glass-effect anim-slide-up">
-            <!-- Tabs -->
-            <view class="tabs">
-                <view class="tab-item" :class="{ active: activeTab === 'frame' }" @click="switchTab('frame')">相框</view>
-                <view class="tab-item" :class="{ active: activeTab === 'sticker' }" @click="switchTab('sticker')">贴纸
-                </view>
-                <view class="tab-item" :class="{ active: activeTab === 'tag' }" @click="switchTab('tag')">状态</view>
+        <!-- Floating Reset Button -->
+        <view class="floating-reset hover-scale" @click="resetAll">
+            <text class="reset-icon">重置</text>
+        </view>
+    </view>
+
+    <!-- Controls Dock -->
+    <view class="dock-panel glass-effect anim-slide-up">
+        <!-- Tabs -->
+        <view class="tabs">
+            <view class="tab-item" :class="{ active: activeTab === 'frame' }" @click="switchTab('frame')">相框</view>
+            <view class="tab-item" :class="{ active: activeTab === 'sticker' }" @click="switchTab('sticker')">贴纸
             </view>
+            <view class="tab-item" :class="{ active: activeTab === 'tag' }" @click="switchTab('tag')">状态</view>
+        </view>
 
-            <!-- Asset Grid -->
-            <scroll-view scroll-x class="sticker-scroll" :show-scrollbar="false">
-                <view class="sticker-list">
-                    <view class="sticker-item" v-for="(item, index) in currentAssets" :key="item._id || index"
-                        :class="{ active: isSelected(item), locked: item.isLocked && !isUnlocked(item._id) }"
-                        @click="selectAsset(item)">
+        <!-- Asset Grid -->
+        <scroll-view scroll-x class="sticker-scroll" :show-scrollbar="false">
+            <view class="sticker-list">
+                <view class="sticker-item" v-for="(item, index) in currentAssets" :key="item._id || index"
+                    :class="{ active: isSelected(item), locked: AdManager.config.ad_enabled && item.isLocked && !isUnlocked(item._id) }"
+                    @click="selectAsset(item)">
 
-                        <view class="sticker-icon-3d">
-                            <image :src="item.thumbnail" class="asset-thumb" mode="aspectFit"></image>
-                            <view v-if="item.isLocked && !isUnlocked(item._id)" class="lock-overlay">🔒</view>
-                        </view>
-                        <text class="sticker-name">{{ item.name }}</text>
+                    <view class="sticker-icon-3d">
+                        <image :src="item.thumbnail" class="asset-thumb" mode="aspectFit"></image>
+                        <view v-if="item.isLocked && !isUnlocked(item._id)" class="lock-overlay">🔒</view>
                     </view>
-
-                    <!-- Empty State Hint -->
-                    <view v-if="currentAssets.length === 0" class="empty-hint">
-                        <text>暂无素材</text>
-                    </view>
+                    <!-- <text class="sticker-name">{{ item.name }}</text> -->
                 </view>
-            </scroll-view>
 
-            <!-- Actions Row -->
-            <view class="actions-row">
-                <button class="magic-btn hover-scale" @click="generateAvatar">
-                    <text class="magic-icon">✨</text>
-                    <text>生成开运大片</text>
-                </button>
+                <!-- Empty State Hint -->
+                <view v-if="currentAssets.length === 0" class="empty-hint">
+                    <text>暂无素材</text>
+                </view>
             </view>
+        </scroll-view>
+
+        <!-- Actions Row -->
+        <view class="actions-row">
+            <button class="magic-btn hover-scale" @click="generateAvatar">
+                <text class="magic-icon">✨</text>
+                <text>生成开运大片</text>
+            </button>
         </view>
     </view>
 </template>
@@ -109,7 +111,9 @@ import { onLoad } from '@dcloudio/uni-app'
 import AdManager from '../../utils/adManager'
 
 // Canvas Constant
-const CANVAS_SCALE = 2
+// Canvas Constant
+// Since we use 1000px canvas for 500rpx (250px approx) container, scale is 4
+const CANVAS_SCALE = 4
 
 // State
 const userAvatar = ref('')
@@ -131,6 +135,14 @@ const selectedLayers = reactive({
 })
 
 const unlockedAssets = ref(new Set()) // Store IDs
+
+// Gesture State
+const imgTransform = reactive({
+    x: 0,
+    y: 0,
+    scale: 1
+})
+let startTouches = [] // Track touch points
 
 onLoad(async () => {
     await AdManager.init()
@@ -202,9 +214,65 @@ const chooseImage = () => {
         success: (res) => {
             userAvatar.value = res.tempFilePaths[0]
             generated.value = false
+            // Reset transform when new image picked
+            // imgTransform.x = 0
+            // imgTransform.y = 0
+            // imgTransform.scale = 1
         }
     })
 }
+
+// --- Gesture Logic ---
+const onTouchStart = (e) => {
+    if (e.touches.length === 1) {
+        startTouches = [{ x: e.touches[0].clientX, y: e.touches[0].clientY }]
+    } else if (e.touches.length === 2) {
+        startTouches = [
+            { x: e.touches[0].clientX, y: e.touches[0].clientY },
+            { x: e.touches[1].clientX, y: e.touches[1].clientY }
+        ]
+    }
+}
+
+const onTouchMove = (e) => {
+    if (e.touches.length === 1 && startTouches.length === 1) {
+        // Pan
+        const dx = e.touches[0].clientX - startTouches[0].x
+        const dy = e.touches[0].clientY - startTouches[0].y
+        imgTransform.x += dx
+        imgTransform.y += dy
+        startTouches[0] = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+    } else if (e.touches.length === 2 && startTouches.length === 2) {
+        // Pinch
+        const currentDist = getDistance(e.touches[0], e.touches[1])
+        const startDist = getDistance(startTouches[0], startTouches[1])
+        if (startDist > 0) {
+            const scale = currentDist / startDist
+            imgTransform.scale *= scale
+            // Update start points to smooth zoom
+            startTouches = [
+                { x: e.touches[0].clientX, y: e.touches[0].clientY },
+                { x: e.touches[1].clientX, y: e.touches[1].clientY }
+            ]
+        }
+    }
+}
+
+const onTouchEnd = () => {
+    startTouches = []
+}
+
+const getDistance = (p1, p2) => {
+    const dx = p1.clientX - p2.clientX
+    const dy = p1.clientY - p2.clientY
+    return Math.sqrt(dx * dx + dy * dy)
+}
+
+const imgStyle = computed(() => {
+    return {
+        transform: `translate(${imgTransform.x}px, ${imgTransform.y}px) scale(${imgTransform.scale})`
+    }
+})
 
 const selectAsset = (item) => {
     // 1. Toggle Logic: If already selected, unselect it
@@ -214,7 +282,7 @@ const selectAsset = (item) => {
     }
 
     // 2. Check Lock
-    if (item.isLocked && !isUnlocked(item._id)) {
+    if (AdManager.config.ad_enabled && item.isLocked && !isUnlocked(item._id)) {
         uni.showModal({
             title: '解锁高级素材',
             content: '观看视频即可永久解锁该素材？',
@@ -248,6 +316,10 @@ const resetAll = () => {
                 selectedLayers.tag = null
                 userAvatar.value = ''
                 generated.value = false
+                // Reset Transform
+                imgTransform.x = 0
+                imgTransform.y = 0
+                imgTransform.scale = 1
                 uni.showToast({ title: '已全部重置', icon: 'none' })
             }
         }
@@ -278,19 +350,42 @@ const getActionClass = (item) => {
 // --- Canvas Logic ---
 
 // Helper: Download File
-const downloadFile = (url) => new Promise((resolve) => {
+const downloadFile = (url) => new Promise(async (resolve) => {
     if (!url) return resolve(null)
-    if (url.startsWith('http') || url.startsWith('cloud:')) {
+
+    let downloadUrl = url
+
+    // Handle Cloud storage path (cloud://...)
+    if (url.startsWith('cloud:')) {
+        try {
+            const res = await uni.cloud.getTempFileURL({
+                fileList: [url]
+            })
+            if (res.fileList && res.fileList[0].tempFileURL) {
+                downloadUrl = res.fileList[0].tempFileURL
+            } else {
+                return resolve(null)
+            }
+        } catch (e) {
+            console.error('Resolve cloud url failed', e)
+            return resolve(null)
+        }
+    }
+
+    if (downloadUrl.startsWith('http')) {
         uni.downloadFile({
-            url,
+            url: downloadUrl,
             success: (res) => {
                 if (res.statusCode === 200) resolve(res.tempFilePath)
                 else resolve(null)
             },
-            fail: () => resolve(null)
+            fail: (err) => {
+                console.error('Download failed', err)
+                resolve(null)
+            }
         })
     } else {
-        resolve(url) // Local path
+        resolve(downloadUrl) // Local path (temporary files etc)
     }
 })
 
@@ -313,9 +408,9 @@ const generateAvatar = async () => {
     ])
 
     const ctx = uni.createCanvasContext('avatarCanvas')
-    const size = 300 // CSS size
-    const W = size * CANVAS_SCALE
-    const H = size * CANVAS_SCALE
+    // target resolution is 1000x1000 for high quality
+    const W = 1000
+    const H = 1000
 
     // Clear
     ctx.clearRect(0, 0, W, H)
@@ -330,11 +425,37 @@ const generateAvatar = async () => {
     ctx.beginPath()
     ctx.arc(W / 2, H / 2, photoSize / 2, 0, 2 * Math.PI)
     ctx.clip()
-    // Draw white bg first
-    ctx.fillStyle = '#FFFFFF'
-    ctx.fillRect(offset, offset, photoSize, photoSize)
     // Draw user image
-    ctx.drawImage(userImg, offset, offset, photoSize, photoSize)
+    // Apply Gesture Transform
+    // Canvas Scale Factor: CANVAS_SCALE = 2
+    // Visual coordinates need to be mapped to Canvas: transform * 2
+
+    // Original centered rect
+    const baseW = photoSize
+    const baseH = photoSize
+    const baseX = offset
+    const baseY = offset
+
+    // Apply user transform
+    // Note: translate is relative to center if scale origin is center
+    // Visual transform origin is center (default)
+
+    const drawW = baseW * imgTransform.scale
+    const drawH = baseH * imgTransform.scale
+
+    // Center point of base rect: cx = baseX + baseW/2
+    const cx = baseX + baseW / 2
+    const cy = baseY + baseH / 2
+
+    // Pan is in CSS pixels, so * CANVAS_SCALE
+    const panX = imgTransform.x * CANVAS_SCALE
+    const panY = imgTransform.y * CANVAS_SCALE
+
+    // Draw X = (cx + panX) - drawW/2
+    const drawX = (cx + panX) - (drawW / 2)
+    const drawY = (cy + panY) - (drawH / 2)
+
+    ctx.drawImage(userImg, drawX, drawY, drawW, drawH)
 
     // 3. Atmosphere Layer (Gradient Mask)
     const grad = ctx.createLinearGradient(0, 0, W, H)
@@ -373,16 +494,11 @@ const drawAssetAtPosition = (ctx, img, pos, W, H) => {
     const iconSize = 100 * CANVAS_SCALE // Sticker default size
     const tagW = 160 * CANVAS_SCALE     // Tag default width
     const tagH = 60 * CANVAS_SCALE
+    const p = 10 * CANVAS_SCALE
 
     let x = 0, y = 0, w = 0, h = 0
 
     // Logic based on position type (sticker vs tag)
-    // Simplified logic: stickers are square-ish, tags are rect
-    // Better: Rely on aspect fit via drawing, but we need rect coordinates
-
-    // Default Padding
-    const p = 10 * CANVAS_SCALE
-
     switch (pos) {
         case 'bottom-right':
             w = iconSize; h = iconSize;
@@ -411,10 +527,18 @@ const drawAssetAtPosition = (ctx, img, pos, W, H) => {
 }
 
 const saveToAlbum = () => {
+    // Determine export size based on Canvas actual drawing size
+    const exportSize = 1000
+
     uni.canvasToTempFilePath({
         canvasId: 'avatarCanvas',
-        width: 300, height: 300,
-        destWidth: 600, destHeight: 600,
+        // IMPORTANT: width/height define the CROP rectangle on the source canvas.
+        // Since we drew on a 600x600 coordinate system (W, H), we must capture 600x600.
+        // If we use 300, it only captures the top-left quarter!
+        width: exportSize,
+        height: exportSize,
+        destWidth: exportSize,
+        destHeight: exportSize,
         success: (res) => {
             uni.saveImageToPhotosAlbum({
                 filePath: res.tempFilePath,
@@ -521,14 +645,16 @@ const saveToAlbum = () => {
 }
 
 .mirror-frame {
-    width: 600rpx;
-    /* Increased to allow overflow check */
-    height: 600rpx;
-    background: transparent;
+    width: 680rpx;
+    height: 680rpx;
+    background-image: url('../../static/images/ui_mirror_frame.png');
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
     position: relative;
     display: flex;
     justify-content: center;
     align-items: center;
+    filter: drop-shadow(0 20rpx 40rpx rgba(0, 0, 0, 0.4));
 }
 
 .frame-border {
@@ -540,12 +666,12 @@ const saveToAlbum = () => {
 
 /* Canvas & Preview */
 .avatar-canvas {
-    width: 300px;
-    height: 300px;
+    width: 1000px;
+    height: 1000px;
     position: absolute;
     top: 0;
     left: 0;
-    transform: scale(0.5);
+    transform: scale(0.25);
     transform-origin: top left;
     opacity: 0;
     pointer-events: none;
@@ -557,17 +683,30 @@ const saveToAlbum = () => {
     position: relative;
 }
 
+.preview-layer {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .avatar-mask {
     position: absolute;
-    top: 13%;
-    /* Center inside wreath */
-    left: 13%;
+    /* Removed hardcoded top/left 13% */
     width: 74%;
     height: 74%;
     border-radius: 50%;
     overflow: hidden;
     background: #FFF;
     z-index: 5;
+    /* Use margin auto + inset to center accurately in flex parent */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
 }
 
 .user-photo {
@@ -577,19 +716,34 @@ const saveToAlbum = () => {
 
 .atmosphere-layer {
     position: absolute;
-    top: 13%;
-    left: 13%;
+    /* Removed hardcoded top/left 13% */
     width: 74%;
     height: 74%;
     border-radius: 50%;
     background: linear-gradient(45deg, rgba(255, 154, 158, 0.2) 0%, rgba(254, 207, 239, 0.2) 99%);
     pointer-events: none;
     z-index: 6;
+    /* Centering */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
 }
 
 .layer-image {
     position: absolute;
     pointer-events: none;
+}
+
+.gesture-handler {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 30;
+    /* Above stickers, tags and frame */
 }
 
 .layer-frame {
@@ -616,16 +770,19 @@ const saveToAlbum = () => {
 .pos-br {
     bottom: 10rpx;
     right: 10rpx;
+    width: 160rpx;
 }
 
 .pos-bl {
     bottom: 10rpx;
     left: 10rpx;
+    width: 160rpx;
 }
 
 .pos-tr {
     top: 10rpx;
     right: 10rpx;
+    /* width: 160rpx; */
 }
 
 .pos-bc {
@@ -633,6 +790,7 @@ const saveToAlbum = () => {
     left: 20%;
     right: 20%;
     margin: 0 auto;
+    width: 200rpx;
 }
 
 .pos-center {
@@ -794,6 +952,8 @@ const saveToAlbum = () => {
     display: flex;
     align-items: center;
     gap: 20rpx;
+    width: 90%;
+    margin: 0 auto 40rpx;
 }
 
 .reset-btn {
