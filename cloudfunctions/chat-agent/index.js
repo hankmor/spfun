@@ -131,15 +131,33 @@ exports.main = async (event, context) => {
 
         // Context Construction (Inject History)
         const historyList = event.history || []
+        const turnCount = historyList.length
         const recentHistory = historyList.slice(-4)
-        let finalUserMessage = message
+        
+        // --- Defense Intelligence (Boss "Blood Bar" Logic) ---
+        let defenseInstruction = ""
+        const normalRoles = ['aunt_money', 'aunt_marriage']
+        
+        if (normalRoles.includes(roleId)) {
+            if (turnCount < 5) {
+                defenseInstruction = "【系统指令：当前处于对线初期。你的心理防线稳如老狗，绝对不能破防！不管用户说什么，你都要用长辈的威严回怼过去，彻底无视用户的任何逻辑。】\n"
+            } else if (turnCount < 10) {
+                defenseInstruction = "【系统指令：用户攻势变强了！你可以表现出一点气急败坏、转移话题、甚至胡搅蛮缠，但绝对不能认输，你的嘴要像钢铁一样坚硬！】\n"
+            } else {
+                defenseInstruction = "【系统指令：如果你觉得用户这一句回怼得一针见血且极其精彩，现在允许你展现出破防或语塞的状态了。】\n"
+            }
+        }
 
+        let finalUserMessage = message
         if (recentHistory.length > 0) {
             const historyText = recentHistory.map(m => {
                 const roleName = m.role === 'user' ? '用户' : '你'
                 return `${roleName}: ${m.content}`
             }).join('\n')
-            finalUserMessage = `[前情提要 - 最近4句对话]\n${historyText}\n\n[用户当前回复]\n${message}`
+            finalUserMessage = `[前情提要 - 最近4句对话]\n${historyText}\n\n${defenseInstruction}[用户当前回复]\n${message}`
+        } else {
+            // First message
+            finalUserMessage = `${defenseInstruction}[用户当前回复]\n${message}`
         }
 
         const result = await generateReply(systemPrompt, [], finalUserMessage)
