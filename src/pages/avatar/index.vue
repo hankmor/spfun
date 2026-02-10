@@ -88,7 +88,7 @@
 
                     <view class="sticker-icon-3d">
                         <image :src="item.thumbnail" class="asset-thumb" mode="aspectFit"></image>
-                        <view v-if="item.isLocked && !isUnlocked(item._id)" class="lock-overlay">🔒</view>
+                        <view v-if="AdManager.config.ad_enabled && item.isLocked && !isUnlocked(item._id)" class="lock-overlay">🔒</view>
                     </view>
                     <!-- <text class="sticker-name">{{ item.name }}</text> -->
                 </view>
