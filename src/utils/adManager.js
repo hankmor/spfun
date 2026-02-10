@@ -120,7 +120,7 @@ class AdManager {
             return
         }
 
-        if (tools.isRelease()) {
+        if (tools.isRelease() || tools.isTrial()) {
             // #ifdef MP-WEIXIN
             if (this.videoAd) {
                 console.log("has videoAd: ", this.videoAd)
@@ -175,7 +175,7 @@ class AdManager {
             // Dev environment or H5: Direct success
             console.log('AdManager: Dev Mode - Mock Ad Success')
             uni.showModal({
-                title: '开发模式',
+                title: `开发模式 (${tools.getEnv()})`,
                 content: '[模拟] 激励视频播放完成？',
                 success: (res) => {
                     if (res.confirm) {
@@ -200,7 +200,7 @@ class AdManager {
             return
         }
 
-        if (tools.isRelease()) {
+        if (tools.isRelease() || tools.isTrial()) {
             // #ifdef MP-WEIXIN
             if (this.cardAd) {
                 this.cardAd.show().then(() => {
@@ -214,7 +214,7 @@ class AdManager {
             console.log('AdManager: Dev Mode - Mock Interstitial Ad Success')
             this.lastCardAdTime = now
             uni.showToast({
-                title: '[模拟] 插屏广告已显示',
+                title: `[模拟-${tools.getEnv()}] 插屏广告已显示`,
                 icon: 'none'
             })
         }
