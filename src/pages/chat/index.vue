@@ -212,6 +212,9 @@
             <text class="hit-score">杀伤力 {{ aiHitScore }}</text>
         </view>
     </view>
+
+    <!-- Privacy Popup -->
+    <PrivacyPopup ref="privacyRef" />
 </template>
 
 <script setup>
@@ -219,6 +222,9 @@ import { ref, nextTick, computed } from 'vue'
 import { onLoad, onUnload, onShareAppMessage } from '@dcloudio/uni-app'
 import { AUNT_MONEY_PIC, AUNT_MARRIAGE_PIC, NEIGHBOR_SHOWOFF_PIC, UNCLE_STRICT_PIC, LOGO_PIC, QR_PIC } from '../../constants/roles'
 import AdManager from '../../utils/adManager'
+import PrivacyPopup from '../../components/PrivacyPopup.vue'
+
+const privacyRef = ref(null)
 
 const roleId = ref('')
 const roleName = ref('')
@@ -805,7 +811,22 @@ const saveImage = (path) => {
     uni.saveImageToPhotosAlbum({
         filePath: path,
         success: () => uni.showToast({ title: '保存成功', icon: 'success' }),
-        fail: () => uni.showToast({ title: '保存失败', icon: 'none' })
+        fail: (err) => {
+            if (err.errMsg.includes('auth deny')) {
+                uni.showModal({
+                    title: '保存失败',
+                    content: '需要允许相册权限',
+                    confirmText: '去设置',
+                    success: (res) => {
+                        if (res.confirm) uni.openSetting()
+                    }
+                })
+            } else if (err.errMsg.includes('privacy')) {
+                privacyRef.value?.checkPrivacy()
+            } else {
+                uni.showToast({ title: '保存失败', icon: 'none' })
+            }
+        }
     })
 }
 

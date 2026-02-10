@@ -99,6 +99,9 @@
     <view class="ad-container" v-if="showBannerAd && bannerAdId">
         <ad :unit-id="bannerAdId" class="banner-ad"></ad>
     </view>
+
+    <!-- Privacy Popup -->
+    <PrivacyPopup ref="privacyRef" />
 </template>
 
 <script setup>
@@ -106,6 +109,9 @@ import { ref, reactive } from 'vue'
 import { onShareAppMessage, onLoad } from '@dcloudio/uni-app'
 import { LOGO_PIC, QR_PIC } from '../../constants/roles'
 import AdManager from '../../utils/adManager'
+import PrivacyPopup from '../../components/PrivacyPopup.vue'
+
+const privacyRef = ref(null)
 
 // Ad State
 const showBannerAd = ref(false)
@@ -472,7 +478,22 @@ const saveToAlbum = () => {
     uni.saveImageToPhotosAlbum({
         filePath: posterPath.value,
         success: () => uni.showToast({ title: '保存成功' }),
-        fail: () => uni.showToast({ title: '保存失败', icon: 'none' })
+        fail: (err) => {
+            if (err.errMsg.includes('auth deny')) {
+                uni.showModal({
+                    title: '提示',
+                    content: '保存失败，需要开启相册权限',
+                    confirmText: '去设置',
+                    success: (res) => {
+                        if (res.confirm) uni.openSetting()
+                    }
+                })
+            } else if (err.errMsg.includes('privacy')) {
+                privacyRef.value?.checkPrivacy()
+            } else {
+                uni.showToast({ title: '保存失败', icon: 'none' })
+            }
+        }
     })
 }
 

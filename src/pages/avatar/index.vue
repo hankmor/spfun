@@ -128,12 +128,18 @@
             </view>
         </view>
     </view>
+
+    <!-- Privacy Popup -->
+    <PrivacyPopup ref="privacyRef" />
 </template>
 
 <script setup>
 import { ref, reactive, computed } from 'vue'
 import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import AdManager from '../../utils/adManager'
+import PrivacyPopup from '../../components/PrivacyPopup.vue'
+
+const privacyRef = ref(null)
 
 // Canvas Constant
 // Canvas Constants & Dynamic Scaling
@@ -631,20 +637,36 @@ const closeResultModal = () => {
 }
 
 const saveGeneratedImage = () => {
-    if (!generatedImagePath.value) return
+    console.log('saveGeneratedImage called, path:', generatedImagePath.value)
+    if (!generatedImagePath.value) {
+        uni.showToast({ title: '没有生成的图片路径', icon: 'none' })
+        return
+    }
 
+    uni.showLoading({ title: '保存中...', mask: true })
     uni.saveImageToPhotosAlbum({
         filePath: generatedImagePath.value,
         success: () => {
+            uni.hideLoading()
             uni.showToast({ title: '已保存到相册' })
         },
         fail: (err) => {
+            uni.hideLoading()
+            console.error('saveImageToPhotosAlbum fail:', err)
             if (err.errMsg.includes('auth deny')) {
                 uni.showModal({
-                    title: '提示',
+                    title: '保存失败',
                     content: '需要您的相册权限才能保存，请到设置中开启',
-                    showCancel: false
+                    confirmText: '去设置',
+                    success: (res) => {
+                        if (res.confirm) {
+                            uni.openSetting()
+                        }
+                    }
                 })
+            } else if (err.errMsg.includes('privacy')) {
+                // 触发隐私协议检查弹窗
+                privacyRef.value?.checkPrivacy()
             } else {
                 uni.showToast({ title: '保存失败', icon: 'none' })
             }
