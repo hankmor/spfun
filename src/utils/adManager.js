@@ -77,7 +77,7 @@ class AdManager {
                 console.error('AdManager: Video Ad Error', err)
             })
         } else {
-            console.warn('AdManager: Skip Video Ad creation (Invalid ID or not supported)')
+            console.warn('AdManager: Skip Video Ad creation. Reason: ID too short or empty. Current ID:', this.config.video_ad_id)
         }
         // #endif
     }
@@ -168,6 +168,8 @@ class AdManager {
                 })
             } else {
                 // Not supported env or init failed
+                console.warn('AdManager: Video Ad Instance is NULL. Check if video_ad_id is configured in Cloud DB. ID:', this.config.video_ad_id)
+                uni.showToast({ title: '广告君开小差了，先为你解锁！', icon: 'none' })
                 if (onSuccess) onSuccess()
             }
             // #endif
