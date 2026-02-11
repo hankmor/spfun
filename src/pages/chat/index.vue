@@ -187,7 +187,21 @@
                             placeholder="请输入昵称" @input="onNicknameInput" @blur="onNicknameBlur" />
                     </view>
 
-                    <view class="profile-tips">设置后，头像和昵称将同步显示在对线记录中</view>
+                    <view class="input-group">
+                        <text class="label">你的性别</text>
+                        <picker class="profile-picker" :range="genderOptions" @change="onGenderChange">
+                            <view class="picker-value">{{ tempGender === 'male' ? '男生' : (tempGender === 'female' ? '女生' : '请选择') }}</view>
+                        </picker>
+                    </view>
+
+                    <view class="input-group">
+                        <text class="label">目前身份</text>
+                        <picker class="profile-picker" :range="statusOptions" @change="onStatusChange">
+                            <view class="picker-value">{{ tempStatus === 'student' ? '学生党' : (tempStatus === 'working' ? '上班族' : '请选择') }}</view>
+                        </picker>
+                    </view>
+
+                    <view class="profile-tips">设置后，AI 亲戚会根据你的身份进行“精准对线”</view>
 
                     <button class="save-profile-btn" @click="saveProfile">
                         🎉 准备好了
@@ -234,7 +248,19 @@ const defaultAvatar = ref('/static/logo.webp')
 const showProfileModal = ref(false)
 const tempAvatar = ref('')
 const tempNickname = ref('')
+const tempGender = ref('unknown')
+const tempStatus = ref('unknown')
 
+const genderOptions = ['男生', '女生']
+const statusOptions = ['学生党', '上班族']
+
+const onGenderChange = (e) => {
+    tempGender.value = e.detail.value === '0' || e.detail.value == 0 ? 'male' : 'female'
+}
+
+const onStatusChange = (e) => {
+    tempStatus.value = e.detail.value === '0' || e.detail.value == 0 ? 'student' : 'working'
+}
 // Keyboard Logic
 const keyboardHeight = ref(0)
 const onKeyboardHeightChange = (e) => {
@@ -486,6 +512,11 @@ onLoad(async (options) => {
 
     checkUserProfile()
 
+    // 如果资料不全（首次进来），自动弹出填写框，确保 AI 知道对话者身份
+    if (!userProfile.value || userProfile.value.gender === 'unknown' || userProfile.value.status === 'unknown') {
+        showProfileModal.value = true
+    }
+
     // Resolve Cloud URLs
     await resolveCloudUrls()
 
@@ -576,13 +607,15 @@ const checkUserProfile = () => {
         const profile = uni.getStorageSync('user_profile')
         if (profile && typeof profile === 'object' && profile.avatarUrl) {
             userProfile.value = profile
-            tempAvatar.value = profile.avatarUrl
+            tempAvatar.value = profile.avatarUrl || ''
             tempNickname.value = profile.nickname || ''
+            tempGender.value = profile.gender || 'unknown'
+            tempStatus.value = profile.status || 'unknown'
         } else {
-            userProfile.value = { gender: 'unknown' }
+            userProfile.value = { gender: 'unknown', status: 'unknown' }
         }
     } catch (e) {
-        userProfile.value = { gender: 'unknown' }
+        userProfile.value = { gender: 'unknown', status: 'unknown' }
     }
 }
 
@@ -615,10 +648,15 @@ const saveProfile = () => {
         uni.showToast({ title: '请选择头像', icon: 'none' })
         return
     }
+    if (tempGender.value === 'unknown' || tempStatus.value === 'unknown') {
+        uni.showToast({ title: '请完善性别和身份', icon: 'none' })
+        return
+    }
     const profile = {
         avatarUrl: tempAvatar.value,
         nickname: tempNickname.value || '网友',
-        gender: 'unknown'
+        gender: tempGender.value,
+        status: tempStatus.value
     }
     userProfile.value = profile
     uni.setStorageSync('user_profile', profile)
@@ -1995,6 +2033,23 @@ onShareAppMessage((res) => {
     color: #999;
     margin-bottom: 50rpx;
     line-height: 1.5;
+    text-align: center;
+}
+
+.profile-picker {
+    background: #f8f8f8;
+    height: 90rpx;
+    border-radius: 16rpx;
+    padding: 0 30rpx;
+    display: flex;
+    align-items: center;
+    border: 1rpx solid #eee;
+}
+
+.picker-value {
+    font-size: 28rpx;
+    color: #333;
+    width: 100%;
 }
 
 .save-profile-btn {
