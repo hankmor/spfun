@@ -71,21 +71,22 @@
         <!-- Bottom Dock -->
         <view class="bottom-dock-container">
             <view class="bottom-dock glass-panel">
-                <view class="dock-btn btn-blessing anim-pop" @click="navTo('/pages/blessing/index')">
+                <view class="dock-btn btn-blessing anim-pop" v-if="bless_enable"
+                    @click="navTo('/pages/blessing/index')">
                     <view class="icon-3d pop-out heartbeat">🧨</view>
                     <view class="btn-content">
                         <text class="btn-title">神仙祝福</text>
                         <text class="btn-subtitle">马年高情商拜年</text>
                     </view>
                 </view>
-                <view class="dock-btn btn-deposit tada-anim" @click="navTo('/pages/bank/index')">
+                <view class="dock-btn btn-deposit tada-anim" v-if="mm_enable" @click="navTo('/pages/bank/index')">
                     <view class="icon-3d pop-out">🧧</view>
                     <view class="btn-content">
                         <text class="btn-title">妈妈存单</text>
                         <text class="btn-subtitle">查查那笔巨款</text>
                     </view>
                 </view>
-                <view class="dock-btn btn-avatar" @click="navTo('/pages/avatar/index')">
+                <view class="dock-btn btn-avatar" v-if="avatar_enable" @click="navTo('/pages/avatar/index')">
                     <view class="shine-container">
                         <view class="shine-sweep"></view>
                     </view>
@@ -102,11 +103,15 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { AUNT_MONEY_PIC, AUNT_MARRIAGE_PIC, NEIGHBOR_SHOWOFF_PIC, UNCLE_STRICT_PIC } from '../../constants/roles'
 import AdManager from '../../utils/adManager'
 import { onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
+
+const mm_enable = ref(false)
+const avatar_enable = ref(false)
+const bless_enable = ref(false)
 
 onShareAppMessage(() => {
     return {
@@ -250,6 +255,11 @@ const unlockRole = (roleId) => {
 
 onLoad(async () => {
     await AdManager.init()
+
+    mm_enable.value = AdManager.config.mm_enable ?? true
+    bless_enable.value = AdManager.config.bless_enable ?? true
+    avatar_enable.value = AdManager.config.avatar_enable ?? true
+
     const stored = uni.getStorageSync('unlocked_roles_history')
     if (stored) {
         unlockedRoles.value = new Set(JSON.parse(stored))
@@ -914,10 +924,24 @@ const resolveCloudUrls = async () => {
 }
 
 @keyframes heartbeat {
-    0% { transform: scale(1); }
-    14% { transform: scale(1.15); }
-    28% { transform: scale(1); }
-    42% { transform: scale(1.15); }
-    70% { transform: scale(1); }
+    0% {
+        transform: scale(1);
+    }
+
+    14% {
+        transform: scale(1.15);
+    }
+
+    28% {
+        transform: scale(1);
+    }
+
+    42% {
+        transform: scale(1.15);
+    }
+
+    70% {
+        transform: scale(1);
+    }
 }
 </style>
