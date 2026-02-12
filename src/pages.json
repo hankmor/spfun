@@ -23,6 +23,12 @@
       "style": {
         "navigationBarTitleText": "马年开运头像"
       }
+    },
+    {
+      "path": "pages/blessing/index",
+      "style": {
+        "navigationBarTitleText": "神仙祝福"
+      }
     }
   ],
   "globalStyle": {

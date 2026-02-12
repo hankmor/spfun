@@ -1,101 +1,104 @@
 <template>
-  <view class="container">
-    <!-- Background Pattern -->
-    <view class="bg-pattern"></view>
-    <view class="bg-clouds"></view>
+    <view class="container">
+        <!-- Background Pattern -->
+        <view class="bg-pattern"></view>
+        <view class="bg-clouds"></view>
 
-    <!-- Header -->
-    <view class="header">
-      <text class="title">春节大作战</text>
-      <text class="subtitle">2026 马年限定版</text>
-    </view>
-
-    <!-- Roles Grid (Center) -->
-    <view class="main-content">
-      <view class="role-grid">
-        <view 
-          v-for="(role, index) in rolesData"
-          :key="index"
-          class="role-card"
-          :class="role.theme"
-          @click="handleRoleCardClick(role)"
-        >
-          <!-- Info Icon -->
-          <view class="info-icon" @click.stop="openRoleModal(role)">i</view>
-
-          <!-- Floating Speech Bubble -->
-          <view class="speech-bubble">
-            <text class="bubble-text">{{ role.desc }}</text>
-            <view class="bubble-tail"></view>
-          </view>
-          
-          <!-- Character Image (Popping out) -->
-          <view class="image-wrapper">
-             <image class="role-img" :src="role.img" mode="aspectFill" @error="onImgError($event, index)"></image>
-             <view class="role-emoji-fallback" v-if="imgErrors[index]">{{ role.fallback }}</view>
-          </view>
-          
-          <!-- Name Tag -->
-          <view class="name-tag">
-            <text class="name-text">{{ role.name }}</text>
-            <view class="action-btn" v-if="!isRoleLocked(role)">🔥</view>
-            <view class="action-btn lock-tag" v-else>🔒</view>
-          </view>
+        <!-- Header -->
+        <view class="header">
+            <text class="title">春节大作战</text>
+            <text class="subtitle">2026 马年限定版</text>
         </view>
-      </view>
-    </view>
 
-    <!-- Role Detail Modal -->
-    <view class="modal-mask" v-if="showRoleModal" @click="closeRoleModal">
-        <view class="modal-content" @click.stop>
-            <view class="modal-header">
-                <text class="modal-title">{{ currentRole.name }}</text>
-                <view class="close-btn" @click="closeRoleModal">✕</view>
-            </view>
-            
-            <view class="modal-body">
-                <view class="modal-role-img-wrapper">
-                    <image class="modal-role-img" :src="currentRole.img" mode="aspectFill"></image>
-                    <view class="modal-role-emoji" v-if="!currentRole.img">{{ currentRole.fallback }}</view>
-                </view>
-                <text class="modal-desc">{{ currentRole.detailDesc }}</text>
-                
-                <view class="modal-tags">
-                    <view class="tag" v-for="tag in currentRole.tags" :key="tag">{{ tag }}</view>
-                </view>
-            </view>
+        <!-- Roles Grid (Center) -->
+        <view class="main-content">
+            <view class="role-grid">
+                <view v-for="(role, index) in rolesData" :key="index" class="role-card" :class="role.theme"
+                    @click="handleRoleCardClick(role)">
+                    <!-- Info Icon -->
+                    <view class="info-icon" @click.stop="openRoleModal(role)">i</view>
 
-            <button class="start-chat-btn" @click="startGame">
-                <text v-if="!isRoleLocked(currentRole)">👊 开始对线</text>
-                <text v-else>🔒 观看视频解锁</text>
-            </button>
-        </view>
-    </view>
+                    <!-- Floating Speech Bubble -->
+                    <view class="speech-bubble">
+                        <text class="bubble-text">{{ role.desc }}</text>
+                        <view class="bubble-tail"></view>
+                    </view>
 
-    <!-- Bottom Dock -->
-    <view class="bottom-dock-container">
-        <view class="bottom-dock glass-panel">
-            <view class="dock-btn btn-deposit tada-anim" @click="navTo('/pages/bank/index')">
-                <view class="icon-3d pop-out">🧧</view>
-                <view class="btn-content">
-                    <text class="btn-title">妈妈存单</text>
-                    <text class="btn-subtitle">刚查到一笔巨款</text>
-                </view>
-            </view>
-            <view class="dock-btn btn-avatar" @click="navTo('/pages/avatar/index')">
-                <view class="shine-container">
-                    <view class="shine-sweep"></view>
-                </view>
-                <view class="icon-3d pop-out delay-anim">🦁</view>
-                <view class="btn-content">
-                    <text class="btn-title">开运头像</text>
-                    <text class="btn-subtitle">换个头像马上有钱</text>
+                    <!-- Character Image (Popping out) -->
+                    <view class="image-wrapper">
+                        <image class="role-img" :src="role.img" mode="aspectFill" @error="onImgError($event, index)">
+                        </image>
+                        <view class="role-emoji-fallback" v-if="imgErrors[index]">{{ role.fallback }}</view>
+                    </view>
+
+                    <!-- Name Tag -->
+                    <view class="name-tag">
+                        <text class="name-text">{{ role.name }}</text>
+                        <view class="action-btn" v-if="!isRoleLocked(role)">🔥</view>
+                        <view class="action-btn lock-tag" v-else>🔒</view>
+                    </view>
                 </view>
             </view>
         </view>
-    </view>
 
-  </view>
+        <!-- Role Detail Modal -->
+        <view class="modal-mask" v-if="showRoleModal" @click="closeRoleModal">
+            <view class="modal-content" @click.stop>
+                <view class="modal-header">
+                    <text class="modal-title">{{ currentRole.name }}</text>
+                    <view class="close-btn" @click="closeRoleModal">✕</view>
+                </view>
+
+                <view class="modal-body">
+                    <view class="modal-role-img-wrapper">
+                        <image class="modal-role-img" :src="currentRole.img" mode="aspectFill"></image>
+                        <view class="modal-role-emoji" v-if="!currentRole.img">{{ currentRole.fallback }}</view>
+                    </view>
+                    <text class="modal-desc">{{ currentRole.detailDesc }}</text>
+
+                    <view class="modal-tags">
+                        <view class="tag" v-for="tag in currentRole.tags" :key="tag">{{ tag }}</view>
+                    </view>
+                </view>
+
+                <button class="start-chat-btn" @click="startGame">
+                    <text v-if="!isRoleLocked(currentRole)">👊 开始对线</text>
+                    <text v-else>🔒 观看视频解锁</text>
+                </button>
+            </view>
+        </view>
+
+        <!-- Bottom Dock -->
+        <view class="bottom-dock-container">
+            <view class="bottom-dock glass-panel">
+                <view class="dock-btn btn-blessing anim-pop" @click="navTo('/pages/blessing/index')">
+                    <view class="icon-3d pop-out heartbeat">🧨</view>
+                    <view class="btn-content">
+                        <text class="btn-title">神仙祝福</text>
+                        <text class="btn-subtitle">马年高情商拜年</text>
+                    </view>
+                </view>
+                <view class="dock-btn btn-deposit tada-anim" @click="navTo('/pages/bank/index')">
+                    <view class="icon-3d pop-out">🧧</view>
+                    <view class="btn-content">
+                        <text class="btn-title">妈妈存单</text>
+                        <text class="btn-subtitle">查查那笔巨款</text>
+                    </view>
+                </view>
+                <view class="dock-btn btn-avatar" @click="navTo('/pages/avatar/index')">
+                    <view class="shine-container">
+                        <view class="shine-sweep"></view>
+                    </view>
+                    <view class="icon-3d pop-out delay-anim">🦁</view>
+                    <view class="btn-content">
+                        <text class="btn-title">开运头像</text>
+                        <text class="btn-subtitle">定制马年专属</text>
+                    </view>
+                </view>
+            </view>
+        </view>
+
+    </view>
 </template>
 
 <script setup>
@@ -103,9 +106,25 @@ import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { AUNT_MONEY_PIC, AUNT_MARRIAGE_PIC, NEIGHBOR_SHOWOFF_PIC, UNCLE_STRICT_PIC } from '../../constants/roles'
 import AdManager from '../../utils/adManager'
+import { onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
+
+onShareAppMessage(() => {
+    return {
+        title: `发现了一个宝藏小程序，2026春节全靠它了，快来试试`,
+        path: '/pages/index/index',
+        imageUrl: '/static/logo.webp'
+    }
+})
+
+onShareTimeline(() => {
+    return {
+        title: `发现了一个宝藏小程序，2026春节全靠它了，快来试试`,
+        imageUrl: '/static/logo.webp'
+    }
+})
 
 const navTo = (url) => {
-  uni.navigateTo({ url })
+    uni.navigateTo({ url })
 }
 
 const imgErrors = ref([false, false, false, false])
@@ -116,55 +135,55 @@ const onImgError = (e, index) => {
 const unlockedRoles = ref(new Set())
 
 const rolesData = ref([
-    { 
+    {
         id: 'aunt_money',
-        name: '势利二姨', 
-        desc: '工资才三千？', 
+        name: '势利二姨',
+        desc: '工资才三千？',
         detailDesc: '“现在的年轻人啊，眼高手低，看看隔壁王阿姨家儿子，年薪百万！” \n\n战斗指数：⭐⭐⭐⭐⭐\n必杀技：收入羞辱、凡尔赛打击',
         tags: ['嫌贫爱富', '炫耀狂魔'],
-        cloudId: AUNT_MONEY_PIC, 
-        img: '', 
-        fallback: '🀄️', 
-        path: '/pages/chat/index?role=aunt_money', 
-        theme: 'theme-red' 
+        cloudId: AUNT_MONEY_PIC,
+        img: '',
+        fallback: '🀄️',
+        path: '/pages/chat/index?role=aunt_money',
+        theme: 'theme-red'
     },
-    { 
+    {
         id: 'aunt_marriage',
-        name: '催婚大姑', 
-        desc: '不结婚不孝！', 
+        name: '催婚大姑',
+        desc: '不结婚不孝！',
         detailDesc: '“都多大了还不找对象？再挑就没人要了！姑姑给你介绍个二婚带娃的...” \n\n战斗指数：⭐⭐⭐⭐\n必杀技：焦虑贩卖、道德绑架',
         tags: ['相亲狂热', '单身歧视'],
-        cloudId: AUNT_MARRIAGE_PIC, 
-        img: '', 
-        fallback: '🤱', 
-        path: '/pages/chat/index?role=aunt_marriage', 
-        theme: 'theme-coral' 
+        cloudId: AUNT_MARRIAGE_PIC,
+        img: '',
+        fallback: '🤱',
+        path: '/pages/chat/index?role=aunt_marriage',
+        theme: 'theme-coral'
     },
-    { 
+    {
         id: 'neighbor_showoff',
         isLocked: true,
-        name: '凡尔赛王姨', 
-        desc: 'Lucy去巴黎了', 
+        name: '凡尔赛王姨',
+        desc: 'Lucy去巴黎了',
         detailDesc: '“哎呀，我家Lucy非要接我去欧洲度假，我都烦死了，不像你这么清闲...” \n\n战斗指数：⭐⭐⭐\n必杀技：高级黑、明贬暗褒',
         tags: ['海归子女', '精致利己'],
-        cloudId: NEIGHBOR_SHOWOFF_PIC, 
-        img: '', 
-        fallback: '👜', 
-        path: '/pages/chat/index?role=neighbor_showoff', 
-        theme: 'theme-red' 
+        cloudId: NEIGHBOR_SHOWOFF_PIC,
+        img: '',
+        fallback: '👜',
+        path: '/pages/chat/index?role=neighbor_showoff',
+        theme: 'theme-red'
     },
-    { 
+    {
         id: 'uncle_strict',
         isLocked: true,
-        name: '严肃二舅', 
-        desc: '年轻人要有规划', 
+        name: '严肃二舅',
+        desc: '年轻人要有规划',
         detailDesc: '（战术喝茶）“年轻人要脚踏实地，那种不稳定工作能干一辈子？考公才是出路！” \n\n战斗指数：⭐⭐⭐⭐\n必杀技：体制内优越、爹味说教',
         tags: ['体制内', '人生导师'],
-        cloudId: UNCLE_STRICT_PIC, 
-        img: '', 
-        fallback: '♟️', 
-        path: '/pages/chat/index?role=uncle_strict', 
-        theme: 'theme-coral' 
+        cloudId: UNCLE_STRICT_PIC,
+        img: '',
+        fallback: '♟️',
+        path: '/pages/chat/index?role=uncle_strict',
+        theme: 'theme-coral'
     }
 ])
 
@@ -272,12 +291,14 @@ const resolveCloudUrls = async () => {
 
 <style scoped>
 .container {
-  min-height: 100vh;
-  background-color: #FFF8E7; /* Creamy Beige */
-  position: relative;
-  overflow-x: hidden;
-  padding-bottom: 220rpx; /* Space for dock */
-  box-sizing: border-box;
+    min-height: 100vh;
+    background-color: #FFF8E7;
+    /* Creamy Beige */
+    position: relative;
+    overflow-x: hidden;
+    padding-bottom: 220rpx;
+    /* Space for dock */
+    box-sizing: border-box;
 }
 
 /* Background Pattern */
@@ -287,7 +308,7 @@ const resolveCloudUrls = async () => {
     left: 0;
     width: 100%;
     height: 100%;
-    background-image: 
+    background-image:
         radial-gradient(#FDE6CA 15%, transparent 15%),
         radial-gradient(#FDE6CA 15%, transparent 15%);
     background-position: 0 0, 40rpx 40rpx;
@@ -321,7 +342,8 @@ const resolveCloudUrls = async () => {
 .title {
     font-size: 64rpx;
     font-weight: 900;
-    color: #D32F2F; /* Vermilion Red */
+    color: #D32F2F;
+    /* Vermilion Red */
     letter-spacing: 4rpx;
     text-shadow: 2rpx 2rpx 0rpx rgba(255, 200, 200, 0.4);
     display: block;
@@ -329,7 +351,8 @@ const resolveCloudUrls = async () => {
 
 .subtitle {
     font-size: 30rpx;
-    color: #FF8F00; /* Amber */
+    color: #FF8F00;
+    /* Amber */
     font-weight: 700;
     margin-top: 16rpx;
     background: #FFF;
@@ -356,7 +379,8 @@ const resolveCloudUrls = async () => {
 .role-card {
     width: 48%;
     height: 380rpx;
-    background: #f06262; /* Fallback */
+    background: #f06262;
+    /* Fallback */
     border-radius: 40rpx;
     position: relative;
     box-shadow: 0 20rpx 40rpx rgba(211, 47, 47, 0.15);
@@ -365,14 +389,21 @@ const resolveCloudUrls = async () => {
     align-items: center;
     justify-content: flex-end;
     margin-bottom: 50rpx;
-    margin-top: 30rpx; /* Space for speech bubble overlap */
+    margin-top: 30rpx;
+    /* Space for speech bubble overlap */
     transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
-    overflow: visible; /* Allow pop out */
-    border: 4rpx solid rgba(255,255,255,0.3);
+    overflow: visible;
+    /* Allow pop out */
+    border: 4rpx solid rgba(255, 255, 255, 0.3);
 }
 
-.theme-red { background: linear-gradient(135deg, #f06262 0%, #e05858 100%); }
-.theme-coral { background: linear-gradient(135deg, #FF8A65 0%, #f06262 100%); }
+.theme-red {
+    background: linear-gradient(135deg, #f06262 0%, #e05858 100%);
+}
+
+.theme-coral {
+    background: linear-gradient(135deg, #FF8A65 0%, #f06262 100%);
+}
 
 .role-card:active {
     transform: scale(0.96);
@@ -385,10 +416,11 @@ const resolveCloudUrls = async () => {
     top: -50rpx;
     left: 50%;
     transform: translateX(-50%);
-    background: #FFF8E1; /* Light Yellow/Cream */
+    background: #FFF8E1;
+    /* Light Yellow/Cream */
     padding: 14rpx 24rpx;
     border-radius: 24rpx;
-    box-shadow: 0 8rpx 20rpx rgba(0,0,0,0.1);
+    box-shadow: 0 8rpx 20rpx rgba(0, 0, 0, 0.1);
     z-index: 10;
     white-space: nowrap;
     border: 3rpx solid #FFECB3;
@@ -418,7 +450,7 @@ const resolveCloudUrls = async () => {
 .image-wrapper {
     position: absolute;
     bottom: 130rpx;
-        /* sits above name tag */
+    /* sits above name tag */
     width: 100%;
     display: flex;
     justify-content: center;
@@ -430,7 +462,7 @@ const resolveCloudUrls = async () => {
     height: 200rpx;
     border-radius: 50%;
     border: 8rpx solid #FFF;
-    box-shadow: 0 12rpx 24rpx rgba(0,0,0,0.2);
+    box-shadow: 0 12rpx 24rpx rgba(0, 0, 0, 0.2);
     background: #FFF;
 }
 
@@ -458,7 +490,7 @@ const resolveCloudUrls = async () => {
     background: rgba(255, 255, 255, 0.95);
     border-radius: 0 0 36rpx 36rpx;
     z-index: 4;
-    border-top: 1rpx solid rgba(255,255,255,0.5);
+    border-top: 1rpx solid rgba(255, 255, 255, 0.5);
 }
 
 .name-text {
@@ -490,57 +522,59 @@ const resolveCloudUrls = async () => {
     display: flex;
     justify-content: center;
     z-index: 100;
-    pointer-events: none; /* Let clicks pass through container area */
+    pointer-events: none;
+    /* Let clicks pass through container area */
 }
 
 .bottom-dock {
     pointer-events: auto;
-    display: flex;
-    align-items: center;
-    /* background: #FFF8E1; */
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12rpx;
     padding: 12rpx;
     border-radius: 80rpx;
-    /* box-shadow: 0 20rpx 50rpx rgba(238, 234, 142, 0.3), inset 0 2rpx 4rpx rgba(255,255,255,0.3); */
-    width: 85%;
-    max-width: 600rpx;
-    justify-content: space-between;
-    /* border: 4rpx solid #FFF8E1; */
+    width: 92%;
+    max-width: 700rpx;
 }
 
 .dock-btn {
-    width: 48%;
     height: 120rpx;
     border-radius: 30rpx;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
-    /* overflow visible for pop-out icons */
+}
+
+.btn-blessing {
+    background: linear-gradient(135deg, #FF8F00 0%, #E65100 100%);
+    box-shadow: 0 8rpx 16rpx rgba(0, 0, 0, 0.15), inset 0 2rpx 4rpx rgba(255, 255, 255, 0.5);
+    border: 2rpx solid #FFE0B2;
 }
 
 .btn-deposit {
     background: linear-gradient(135deg, #FFC107 0%, #FF8F00 100%);
-    box-shadow: 0 8rpx 16rpx rgba(0,0,0,0.15), inset 0 2rpx 4rpx rgba(255,255,255,0.5);
+    box-shadow: 0 8rpx 16rpx rgba(0, 0, 0, 0.15), inset 0 2rpx 4rpx rgba(255, 255, 255, 0.5);
     border: 2rpx solid #FFECB3;
 }
 
 .btn-avatar {
     background: linear-gradient(135deg, #FF5252 0%, #D32F2F 100%);
-    box-shadow: 0 8rpx 16rpx rgba(0,0,0,0.15), inset 0 2rpx 4rpx rgba(255,255,255,0.3);
+    box-shadow: 0 8rpx 16rpx rgba(0, 0, 0, 0.15), inset 0 2rpx 4rpx rgba(255, 255, 255, 0.3);
     border: 2rpx solid #FFCDD2;
 }
 
 .icon-3d {
     font-size: 56rpx;
     margin-right: 12rpx;
-    filter: drop-shadow(0 4rpx 4rpx rgba(0,0,0,0.2));
+    filter: drop-shadow(0 4rpx 4rpx rgba(0, 0, 0, 0.2));
     transition: transform 0.2s;
 }
 
 .pop-out {
     position: absolute;
-    top: -40rpx;
-    left: 10rpx;
+    top: -36rpx;
+    left: 4rpx;
     z-index: 10;
 }
 
@@ -556,7 +590,7 @@ const resolveCloudUrls = async () => {
     font-size: 34rpx;
     font-weight: 950;
     letter-spacing: 2rpx;
-    text-shadow: 0 2rpx 4rpx rgba(0,0,0,0.2);
+    text-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.2);
     line-height: 1.2;
 }
 
@@ -573,11 +607,31 @@ const resolveCloudUrls = async () => {
 }
 
 @keyframes tada {
-    0% { transform: scale(1); }
-    10%, 20% { transform: scale(0.95) rotate(-3deg); }
-    30%, 50%, 70%, 90% { transform: scale(1.05) rotate(3deg); }
-    40%, 60%, 80% { transform: scale(1.05) rotate(-3deg); }
-    100% { transform: scale(1) rotate(0); }
+    0% {
+        transform: scale(1);
+    }
+
+    10%,
+    20% {
+        transform: scale(0.95) rotate(-3deg);
+    }
+
+    30%,
+    50%,
+    70%,
+    90% {
+        transform: scale(1.05) rotate(3deg);
+    }
+
+    40%,
+    60%,
+    80% {
+        transform: scale(1.05) rotate(-3deg);
+    }
+
+    100% {
+        transform: scale(1) rotate(0);
+    }
 }
 
 /* Shine Effect */
@@ -599,16 +653,25 @@ const resolveCloudUrls = async () => {
     left: -150%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(120deg, transparent, rgba(255,255,255,0.4), transparent);
+    background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.4), transparent);
     transform: skewX(-25deg);
     animation: shine 3s infinite;
 }
 
 @keyframes shine {
-    0% { left: -150%; }
-    30% { left: 150%; }
-    100% { left: 150%; }
+    0% {
+        left: -150%;
+    }
+
+    30% {
+        left: 150%;
+    }
+
+    100% {
+        left: 150%;
+    }
 }
+
 .btn-subtitle {
     color: rgba(255, 255, 255, 0.9);
     font-size: 20rpx;
@@ -701,7 +764,7 @@ const resolveCloudUrls = async () => {
     border: 6rpx solid #FFECB3;
     overflow: hidden;
     background: #f5f5f5;
-    box-shadow: 0 8rpx 20rpx rgba(0,0,0,0.1);
+    box-shadow: 0 8rpx 20rpx rgba(0, 0, 0, 0.1);
 }
 
 .modal-role-img {
@@ -773,7 +836,7 @@ const resolveCloudUrls = async () => {
     background: #FFF;
     padding: 4rpx 16rpx;
     border-radius: 20rpx;
-    box-shadow: 0 2rpx 6rpx rgba(0,0,0,0.1);
+    box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.1);
 }
 
 .lock-tag {
@@ -792,24 +855,69 @@ const resolveCloudUrls = async () => {
 }
 
 @keyframes bounce {
-    0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
-    40% {transform: translateY(-10rpx);}
-    60% {transform: translateY(-5rpx);}
+
+    0%,
+    20%,
+    50%,
+    80%,
+    100% {
+        transform: translateY(0);
+    }
+
+    40% {
+        transform: translateY(-10rpx);
+    }
+
+    60% {
+        transform: translateY(-5rpx);
+    }
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes slideUp {
-    from { transform: translateY(50rpx); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+    from {
+        transform: translateY(50rpx);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 /* Animations */
 @keyframes float {
-    0%, 100% { transform: translate(-50%, 0); }
-    50% { transform: translate(-50%, -8rpx); }
+
+    0%,
+    100% {
+        transform: translate(-50%, 0);
+    }
+
+    50% {
+        transform: translate(-50%, -8rpx);
+    }
+}
+
+/* Heartbeat Animation for Firecracker */
+.heartbeat {
+    animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+    0% { transform: scale(1); }
+    14% { transform: scale(1.15); }
+    28% { transform: scale(1); }
+    42% { transform: scale(1.15); }
+    70% { transform: scale(1); }
 }
 </style>
