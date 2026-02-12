@@ -119,7 +119,7 @@ export const PosterTemplates = {
                 ]
             }
         },
-        defaultTitle: '甜蜜时光',
+        defaultTitle: '甜蜜有你',
         couplets: ['春风十里 · 不如你', '岁岁年年 · 有你真好']
     }
 }

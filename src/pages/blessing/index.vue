@@ -645,9 +645,11 @@ const savePoster = () => {
                             performSave()
                         },
                         onFail: (err) => {
-                            // 广告加载失败，降级允许保存
-                            if (err) uni.showToast({ title: '广告加载失败，已为您自动跳过', icon: 'none' })
-                            performSave()
+                            //如果是用户中途且关闭且未看完，提示需看完
+                            // 如果是广告加载失败，AdManager内部已经走了 onSuccess
+                            if (err) {
+                                uni.showToast({ title: '您取消了操作', icon: 'none' })
+                            }
                         }
                     })
                 }
