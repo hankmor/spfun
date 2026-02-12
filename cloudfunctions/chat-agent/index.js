@@ -4,6 +4,7 @@ const { generateReply } = require('./lib/ai-service')
 const { loadConfig } = require('./lib/config-loader')
 const { checkDailyLimit } = require('./lib/rate-limit')
 const ROLES = require('./prompts/roles')
+const { getBlessingPrompt } = require('./prompts/blessing')
 
 cloud.init({
     env: cloud.DYNAMIC_CURRENT_ENV
@@ -38,6 +39,19 @@ exports.main = async (event, context) => {
 
     // 0. Load Dynamic Configuration
     const appConfig = await loadConfig()
+
+    // Handle Blessing Generator
+    if (event.action === 'blessing') {
+        const { target, vibe } = event
+        const systemPrompt = getBlessingPrompt(target, vibe)
+
+        try {
+            const result = await generateReply(systemPrompt, [], "请为我生成一段祝福语：")
+            return { blessing: result.content }
+        } catch (e) {
+            return { error: 'Blessing Generation Failed', debug: e.message }
+        }
+    }
 
     // Handle God Mode (AI Help)
     if (event.action === 'god_mode') {
