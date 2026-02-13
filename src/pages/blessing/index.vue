@@ -12,7 +12,7 @@
             <view class="section">
                 <view class="section-title">
                     <text class="title-text">🧧 发送给谁？</text>
-                    <text class="title-sub">选择对象，AI 会调整语气</text>
+                    <text class="title-sub">选择对象，自动调整语气</text>
                 </view>
                 <view class="target-grid">
                     <view v-for="item in targets" :key="item.id" class="target-card"
@@ -167,7 +167,7 @@ const generateBlessing = async () => {
             isPosterMode.value = false
             showResultModal.value = true
         } else {
-            uni.showToast({ title: 'AI 思考超时，再试一次', icon: 'none' })
+            uni.showToast({ title: '嘴替思考超时，再试一次', icon: 'none' })
         }
     } catch (e) {
         console.error("error: ", e)

@@ -328,7 +328,7 @@ const watchAdForEnergy = () => {
 }
 
 const fetchGodModeReply = async () => {
-    uni.showLoading({ title: 'AI 思考中...' })
+    uni.showLoading({ title: '嘴替正在思考中...' })
     try {
         const history = messages.value.slice(-6) // Context
         const res = await uni.cloud.callFunction({
@@ -345,7 +345,7 @@ const fetchGodModeReply = async () => {
         }
     } catch (e) {
         console.log("error: ", e)
-        uni.showToast({ title: 'AI 罢工了', icon: 'none' })
+        uni.showToast({ title: '嘴替罢工了', icon: 'none' })
     } finally {
         uni.hideLoading()
     }
@@ -361,8 +361,8 @@ const useGodMode = () => {
     }
 
     uni.showModal({
-        title: '🤖 AI 嘴替',
-        content: '看个视频，让 AI 帮你生成一句绝杀金句？',
+        title: '🤖 春节嘴替',
+        content: '看个视频，让嘴替帮你生成一句绝杀金句？',
         success: (res) => {
             if (res.confirm) {
                 AdManager.showRewardedVideoAd({
