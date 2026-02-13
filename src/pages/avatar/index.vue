@@ -1,5 +1,5 @@
 <template>
-    <view class="container">
+    <view class="container" v-if="avatar_enable">
         <!-- Header Decor -->
         <view class="lanterns">
             <view class="lantern l-left">🏮</view>
@@ -70,7 +70,7 @@
     </view>
 
     <!-- Controls Dock -->
-    <view class="dock-panel glass-effect anim-slide-up">
+    <view class="dock-panel glass-effect anim-slide-up" v-if="avatar_enable">
         <!-- Tabs -->
         <view class="tabs">
             <view class="tab-item" :class="{ active: activeTab === 'frame' }" @click="switchTab('frame')">相框</view>
@@ -189,6 +189,7 @@ onLoad(async () => {
     await AdManager.init()
     
     avatar_enable.value = AdManager.config.avatar_enable
+    // avatar_enable.value = false
 
     fetchAssets()
     // Load local unlocked history
