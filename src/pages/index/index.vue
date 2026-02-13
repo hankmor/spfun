@@ -109,9 +109,9 @@ import { AUNT_MONEY_PIC, AUNT_MARRIAGE_PIC, NEIGHBOR_SHOWOFF_PIC, UNCLE_STRICT_P
 import AdManager from '../../utils/adManager'
 import { onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 
-const mm_enable = ref(false)
-const avatar_enable = ref(false)
-const bless_enable = ref(false)
+const mm_enable = ref(true)
+const avatar_enable = ref(true)
+const bless_enable = ref(true)
 
 onShareAppMessage(() => {
     return {

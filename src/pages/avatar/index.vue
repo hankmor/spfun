@@ -17,7 +17,7 @@
             <view class="lion-decor anim-bounce">🦁</view>
 
             <!-- Mirror Frame -->
-            <view class="mirror-frame shadow-xl">
+            <view class="mirror-frame shadow-xl" v-if="avatar_enable">
                 <view class="frame-border">
                     <!-- Canvas (Hidden/Offscreen for logic) -->
                     <canvas canvas-id="avatarCanvas" id="avatarCanvas" class="avatar-canvas"></canvas>
@@ -149,6 +149,7 @@ const userAvatar = ref('')
 const userImgRatio = ref(1) // width / height
 const generated = ref(false)
 const activeTab = ref('frame') // frame, sticker, tag
+const avatar_enable = ref(true)
 
 // Share Modal State
 const showResultModal = ref(false)
@@ -186,6 +187,9 @@ onLoad(async () => {
     })
 
     await AdManager.init()
+    
+    avatar_enable.value = AdManager.config.avatar_enable
+
     fetchAssets()
     // Load local unlocked history
     const stored = uni.getStorageSync('unlocked_avatar_assets')
